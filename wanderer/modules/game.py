@@ -4,7 +4,7 @@ from modules import player, sprites, particles, timers
 
 class Game(object):
     def __init__(self):
-        print "Initializing game ..."
+        print "Welcome! Initializing game ..."
         super(Game, self).__init__()
         pygame.init()
         if not pygame.font:
@@ -51,7 +51,8 @@ class Game(object):
         self.all_particles.update(loop_time)
         for control in self.controls:
             control.update(loop_time)
-        timers.all_timers.update(loop_time)
+        for timer in timers.all_timers:
+            timer.update(loop_time)
 
         self.screen.blit(self.background, (0,0))
         self.all_sprites.draw(self.screen)

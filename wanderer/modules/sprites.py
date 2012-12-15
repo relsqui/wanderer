@@ -110,7 +110,7 @@ class Animation(object):
     def cycle(self):
         if self.running:
             self.current = (self.current + 1) % len(self.frames)
-            timers.all_timers.new(self.speed, self.cycle)
+            timers.Timer(self.speed, self.cycle)
 
     def image(self):
         image = self.frames[self.current]
