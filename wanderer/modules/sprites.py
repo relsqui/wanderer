@@ -29,21 +29,26 @@ class Character(pygame.sprite.Sprite):
         oldpos = self.rect
         newpos = oldpos.move(self.velocity)
         if newpos.left < self.area.left or newpos.right > self.area.right or newpos.top < self.area.top or newpos.bottom > self.area.bottom:
-            self.velocity = 0
+            self.velocity = (0,0)
         else:
             self.rect = newpos
 
+    def move(self, direction):
+        self.reimage(direction)
+        self.accelerate(direction)
+
     def accelerate(self, direction):
-        oldpos = self.rect
+        xvel, yvel = self.velocity
         if direction is LEFT:
-            self.reimage(LEFT)
-            self.velocity = (-1 * self.speed, 0)
+            xvel -= self.speed
         elif direction is RIGHT:
-            self.reimage(RIGHT)
-            self.velocity = (self.speed, 0)
+            xvel += self.speed
         elif direction is UP:
-            self.reimage(UP)
-            self.velocity = (0, -1 * self.speed)
+            yvel -= self.speed
         elif direction is DOWN:
-            self.reimage(DOWN)
-            self.velocity = (0, self.speed)
+            yvel += self.speed
+        xvel = min(xvel, self.speed)
+        xvel = max(xvel, -1 * self.speed)
+        yvel = min(yvel, self.speed)
+        yvel = max(yvel, -1 * self.speed)
+        self.velocity = (xvel, yvel)

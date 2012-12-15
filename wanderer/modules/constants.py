@@ -3,7 +3,7 @@ from pygame.locals import *
 
 # Window
 WINDOW_SIZE = (500,400)
-WINDOW_TITLE = "Hark! A turtle."
+WINDOW_TITLE = "Wanderer"
 BACKGROUND_COLOR = (50, 200, 70)
 
 # Sprites
