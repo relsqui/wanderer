@@ -69,13 +69,13 @@ class Game(object):
 
         # Movement
         controls.append(Control([KEYDOWN], LEFT_KEYS, 0, self.player.sprite.move, LEFT))
-        controls.append(Control([KEYUP], LEFT_KEYS, 0, self.player.sprite.accelerate, RIGHT))
+        controls.append(Control([KEYUP], LEFT_KEYS, 0, self.player.sprite.accelerate, RIGHT, True))
         controls.append(Control([KEYDOWN], RIGHT_KEYS, 0, self.player.sprite.move, RIGHT))
-        controls.append(Control([KEYUP], RIGHT_KEYS, 0, self.player.sprite.accelerate, LEFT))
+        controls.append(Control([KEYUP], RIGHT_KEYS, 0, self.player.sprite.accelerate, LEFT, True))
         controls.append(Control([KEYDOWN], UP_KEYS, 0, self.player.sprite.move, UP))
-        controls.append(Control([KEYUP], UP_KEYS, 0, self.player.sprite.accelerate, DOWN))
+        controls.append(Control([KEYUP], UP_KEYS, 0, self.player.sprite.accelerate, DOWN, True))
         controls.append(Control([KEYDOWN], DOWN_KEYS, 0, self.player.sprite.move, DOWN))
-        controls.append(Control([KEYUP], DOWN_KEYS, 0, self.player.sprite.accelerate, UP))
+        controls.append(Control([KEYUP], DOWN_KEYS, 0, self.player.sprite.accelerate, UP, True))
 
         for control in controls:
             for event in control.events:

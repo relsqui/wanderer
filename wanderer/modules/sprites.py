@@ -31,7 +31,23 @@ class Character(pygame.sprite.Sprite):
         if self.velocity == (0,0):
             self.position = 1
         else:
-            newpos = self.rect.move(self.velocity)
+            angle = self.velocity
+            if self.velocity[0] and self.velocity[1]:
+                if self.direction in (LEFT, RIGHT):
+                    angle = (self.velocity[0], 0)
+                else:
+                    angle = (0, self.velocity[1])
+            elif self.velocity[0]:
+                if self.velocity[0] > 0:
+                    self.direction = RIGHT
+                else:
+                    self.direction = LEFT
+            elif self.velocity[1]:
+                if self.velocity[1] > 0:
+                    self.direction = DOWN
+                else:
+                    self.direction = UP
+            newpos = self.rect.move(angle)
             if newpos.left > self.area.left and newpos.right < self.area.right and newpos.top > self.area.top and newpos.bottom < self.area.bottom:
                 self.rect = newpos
             if self.walk_timer:
@@ -50,16 +66,20 @@ class Character(pygame.sprite.Sprite):
         self.direction = direction
         self.accelerate(direction)
 
-    def accelerate(self, direction):
+    def accelerate(self, direction, to_stop = False):
         xvel, yvel = self.velocity
         if direction is LEFT:
-            xvel -= self.speed
+            if xvel or not to_stop:
+                xvel -= self.speed
         elif direction is RIGHT:
-            xvel += self.speed
+            if xvel or not to_stop:
+                xvel += self.speed
         elif direction is UP:
-            yvel -= self.speed
+            if yvel or not to_stop:
+                yvel -= self.speed
         elif direction is DOWN:
-            yvel += self.speed
+            if yvel or not to_stop:
+                yvel += self.speed
         xvel = min(xvel, self.speed)
         xvel = max(xvel, -1 * self.speed)
         yvel = min(yvel, self.speed)
