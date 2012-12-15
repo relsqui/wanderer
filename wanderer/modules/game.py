@@ -64,13 +64,17 @@ class Game(object):
 
     def init_controls(self):
         controls = []
-        controls.append(Control([QUIT], [K_q], 0, sys.exit, 0))
+        controls.append(Control([QUIT], [K_q], 0, self.quit))
         controls.append(Control([], [K_SPACE], 200, self.player.greet, self.all_particles))
         controls.append(Control([], LEFT_KEYS, 0, self.player.sprite.move, LEFT))
         controls.append(Control([], RIGHT_KEYS, 0, self.player.sprite.move, RIGHT))
         controls.append(Control([], UP_KEYS, 0, self.player.sprite.move, UP))
         controls.append(Control([], DOWN_KEYS, 0, self.player.sprite.move, DOWN))
         return controls
+
+    def quit(self):
+        print "Goodbye!"
+        sys.exit(0)
 
 
 class Control(object):
