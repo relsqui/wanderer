@@ -10,7 +10,7 @@ class Game(object):
         if not pygame.font:
             print "Couldn't load pygame.font!"
             sys.exit(1)
-        print "* pygame"
+        print " * pygame"
 
         # Display and screen
         self.window = pygame.display.set_mode(WINDOW_SIZE)
@@ -19,19 +19,19 @@ class Game(object):
         self.background = pygame.Surface(self.screen.get_size()).convert()
         self.background.fill(BACKGROUND_COLOR)
         self.font = pygame.font.Font(None, FONT_SIZE)
-        print "* display"
+        print " * display"
 
         # Sprites and player
         self.player = player.Player(sprites.Turtle(self.screen), self.font)
         self.all_sprites = pygame.sprite.RenderPlain((self.player.sprite,))
         self.all_particles = particles.ParticleGroup()
-        print "* sprites"
+        print " * sprites"
 
         # Miscellany
         self.keys_down = dict()
         self.clock = pygame.time.Clock()
         self.controls = self.init_controls()
-        print "* controls & misc."
+        print " * controls & clock"
 
 
     def loop(self):

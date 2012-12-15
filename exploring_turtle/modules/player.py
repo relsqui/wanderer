@@ -7,6 +7,7 @@ class Player(object):
         super(Player, self).__init__()
         self.sprite = sprite
         self.font = font
+        self.last_greetings = [None, None, None]
 
     def update(self):
         pass
@@ -16,4 +17,11 @@ class Player(object):
         all_particles.add(particles.TextParticle(self.font, message, destination))
 
     def greet(self, all_particles):
-        self.say(all_particles, random.choice(GREETINGS))
+        while True:
+            greeting = random.choice(GREETINGS)
+            if greeting not in self.last_greetings:
+                self.last_greetings.pop(0)
+                self.last_greetings.append(greeting)
+                break
+            else:
+        self.say(all_particles, greeting)
