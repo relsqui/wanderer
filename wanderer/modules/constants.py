@@ -11,6 +11,8 @@ SPRITE_WIDTH = 32   # pixels
 SPRITE_HEIGHT = 34  # pixels
 CHAR_WIDTH = 96     # pixels
 CHAR_HEIGHT = 136   # pixels
+WALK_RATE = 250     # milliseconds between frames
+SPRITE_SPEED = 2    # pixels per tick
 
 # Controls
 LEFT_KEYS = (K_h, K_LEFT)

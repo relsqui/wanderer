@@ -47,7 +47,7 @@ class Game(object):
                     handler.check(event)
 
         self.player.update()
-        self.all_sprites.update()
+        self.all_sprites.update(loop_time)
         self.all_particles.update(loop_time)
         for control in self.controls:
             control.update(loop_time)
