@@ -1,5 +1,5 @@
-import pygame, os
-from modules import particles
+import pygame, os, random
+from modules import particles, timers
 from modules.constants import *
 
 class Character(pygame.sprite.Sprite):
@@ -31,7 +31,7 @@ class Character(pygame.sprite.Sprite):
             frames.append(frames[1])
             self.animations.append(Animation(frames, WALK_RATE))
 
-    def update(self, loop_time):
+    def update(self):
         if self.velocity == (0,0):
             self.animation.stop()
             self.position = 1
@@ -56,7 +56,9 @@ class Character(pygame.sprite.Sprite):
             newpos = self.rect.move(angle)
             if newpos.left > self.area.left and newpos.right < self.area.right and newpos.top > self.area.top and newpos.bottom < self.area.bottom:
                 self.rect = newpos
-        self.image = self.animation.image(loop_time)
+            else:
+                self.say(random.choice(OUCHES))
+        self.image = self.animation.image()
 
 
     def move(self, direction):
@@ -99,29 +101,26 @@ class Animation(object):
         self.frames = frames
         self.speed = speed
         self.default = default
-        self.current = default
-        self.countdown = speed
+        self.current = default - 1
         self.running = False
         if not colorkey:
             colorkey = self.frames[default].get_at((0,0))
         self.colorkey = colorkey
 
-    def update(self, loop_time):
+    def cycle(self):
         if self.running:
-            self.countdown -= loop_time
-            if self.countdown <= 0:
-                self.current = (self.current + 1) % len(self.frames)
-                self.countdown = self.speed
+            self.current = (self.current + 1) % len(self.frames)
+            timers.all_timers.new(self.speed, self.cycle)
 
-    def image(self, loop_time = 0):
-        if loop_time:
-            self.update(loop_time)
+    def image(self):
         image = self.frames[self.current]
         image.set_colorkey(self.colorkey)
         return image
 
     def start(self):
-        self.running = True
+        if not self.running:
+            self.running = True
+            self.cycle()
 
     def stop(self):
         self.running = False

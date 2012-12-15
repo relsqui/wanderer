@@ -30,7 +30,10 @@ TEXT_TIMEOUT_PER_CHAR = 150     # milliseconds
 FONT_COLOR = (0, 0, 0)
 FONT_SIZE = 20  # pixels
 GREETINGS = []
-f = open(os.path.join("data", "greetings.txt"))
-for line in f:
-    GREETINGS.append(line.strip())
-f.close()
+OUCHES = []
+files = {"greetings.txt":GREETINGS, "ouches.txt":OUCHES}
+for filename, constant in files.items():
+    f = open(os.path.join("data", filename))
+    for line in f:
+        constant.append(line.strip())
+    f.close()

@@ -1,6 +1,6 @@
 import pygame, sys
 from modules.constants import *
-from modules import player, sprites, particles
+from modules import player, sprites, particles, timers
 
 class Game(object):
     def __init__(self):
@@ -47,10 +47,11 @@ class Game(object):
                     handler.check(event)
 
         self.player.update()
-        self.all_sprites.update(loop_time)
+        self.all_sprites.update()
         self.all_particles.update(loop_time)
         for control in self.controls:
             control.update(loop_time)
+        timers.all_timers.update(loop_time)
 
         self.screen.blit(self.background, (0,0))
         self.all_sprites.draw(self.screen)
