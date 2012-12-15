@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 from pygame.locals import *
 
 WIDTH = 0
