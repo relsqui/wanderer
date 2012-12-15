@@ -20,5 +20,4 @@ LEFT, RIGHT, UP, DOWN = (0, 1, 2, 3)
 
 # Defaults
 PARTICLE_DEFAULT_TIMEOUT = 500  # milliseconds
-PARTICLE_DEFAULT_FADE = 10      # steps
-TEXT_TIMEOUT_PER_CHAR = 100
+TEXT_TIMEOUT_PER_CHAR = 150     # milliseconds
