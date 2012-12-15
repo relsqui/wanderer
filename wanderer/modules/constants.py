@@ -26,6 +26,8 @@ DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 PARTICLE_DEFAULT_TIMEOUT = 500  # milliseconds
 TEXT_TIMEOUT_PER_CHAR = 150     # milliseconds
 INTERJECT_TIMEOUT = 500         # milliseconds
+FADE_STEPS = 10
+FADE_AMOUNT = 255/FADE_STEPS
 
 # Text
 FONT_COLOR = (0, 0, 0)

@@ -48,7 +48,6 @@ class Game(object):
 
         self.player.update()
         self.all_sprites.update()
-        self.all_particles.update(loop_time)
         for timer in timers.all_timers:
             timer.update(loop_time)
 
