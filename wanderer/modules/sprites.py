@@ -1,4 +1,5 @@
 import pygame, os
+from modules import particles
 from modules.constants import *
 
 class Character(pygame.sprite.Sprite):
@@ -82,6 +83,11 @@ class Character(pygame.sprite.Sprite):
         yvel = min(yvel, self.speed)
         yvel = max(yvel, -1 * self.speed)
         self.velocity = (xvel, yvel)
+    
+    def say(self, all_particles, font, message):
+        offset = -1 * (self.rect.height/2 + FONT_SIZE/2 + 2)
+        destination = self.rect.move(0, offset)
+        all_particles.add(particles.TextParticle(font, message, destination))
 
 
 class Animation(object):
