@@ -23,5 +23,4 @@ class Player(object):
                 self.last_greetings.pop(0)
                 self.last_greetings.append(greeting)
                 break
-            else:
         self.say(all_particles, greeting)
