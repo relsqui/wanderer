@@ -11,11 +11,11 @@ class Player(object):
     def update(self):
         pass
 
-    def greet(self, all_particles):
+    def greet(self):
         while True:
             greeting = random.choice(GREETINGS)
             if greeting not in self.last_greetings:
                 self.last_greetings.pop(0)
                 self.last_greetings.append(greeting)
                 break
-        self.sprite.say(all_particles, greeting)
+        self.sprite.say(greeting)

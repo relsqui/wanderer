@@ -3,7 +3,7 @@ from modules import particles
 from modules.constants import *
 
 class Character(pygame.sprite.Sprite):
-    def __init__(self, screen, sheet, font):
+    def __init__(self, screen, sheet, font, all_particles):
         super(Character, self).__init__()
         self.sheet = sheet
         self.animations = []
@@ -20,6 +20,7 @@ class Character(pygame.sprite.Sprite):
         self.rect.center = self.area.center
 
         self.font = font
+        self.all_particles = all_particles
 
     def init_images(self):
         for direction in (DOWN, LEFT, RIGHT, UP):
@@ -86,10 +87,10 @@ class Character(pygame.sprite.Sprite):
         yvel = max(yvel, -1 * self.speed)
         self.velocity = (xvel, yvel)
     
-    def say(self, all_particles, message):
+    def say(self, message):
         offset = -1 * (self.rect.height/2 + FONT_SIZE/2 + 2)
         destination = self.rect.move(0, offset)
-        all_particles.add(particles.TextParticle(self.font, message, destination))
+        self.all_particles.add(particles.TextParticle(self.font, message, destination))
 
 
 class Animation(object):

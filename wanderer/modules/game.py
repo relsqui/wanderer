@@ -22,12 +22,12 @@ class Game(object):
         print " * display"
 
         # Sprites and player
+        self.all_particles = particles.ParticleGroup()
         sprite_sheet = pygame.image.load(os.path.join("images", "lady_sprites.png")).convert()
         char_cursor = pygame.Rect(CHAR_WIDTH, 0, CHAR_WIDTH, CHAR_HEIGHT)
         char_sheet = sprite_sheet.subsurface(char_cursor)
-        self.player = player.Player(sprites.Character(self.screen, char_sheet, self.font))
+        self.player = player.Player(sprites.Character(self.screen, char_sheet, self.font, self.all_particles))
         self.all_sprites = pygame.sprite.RenderPlain((self.player.sprite,))
-        self.all_particles = particles.ParticleGroup()
         print " * sprites"
 
         # Miscellany
@@ -65,7 +65,7 @@ class Game(object):
         controls.append(Control([QUIT, KEYDOWN], [K_q], 0, self.quit))
 
         # Random greeting
-        controls.append(Control([KEYDOWN], [K_SPACE], 200, self.player.greet, self.all_particles))
+        controls.append(Control([KEYDOWN], [K_SPACE], 200, self.player.greet))
 
         # Movement
         controls.append(Control([KEYDOWN], LEFT_KEYS, 0, self.player.sprite.move, LEFT))
