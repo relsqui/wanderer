@@ -58,10 +58,10 @@ class Game(object):
         controls = []
         controls.append(Control([QUIT, KEYDOWN], [K_q], 0, self.quit))
         controls.append(Control([KEYDOWN], [K_SPACE], 200, self.player.greet, self.all_particles))
-        controls.append(Control([KEYDOWN], LEFT_KEYS, 0, self.player.sprite.move, LEFT))
-        controls.append(Control([KEYDOWN], RIGHT_KEYS, 0, self.player.sprite.move, RIGHT))
-        controls.append(Control([KEYDOWN], UP_KEYS, 0, self.player.sprite.move, UP))
-        controls.append(Control([KEYDOWN], DOWN_KEYS, 0, self.player.sprite.move, DOWN))
+        controls.append(Control([KEYDOWN], LEFT_KEYS, 0, self.player.sprite.accelerate, LEFT))
+        controls.append(Control([KEYDOWN], RIGHT_KEYS, 0, self.player.sprite.accelerate, RIGHT))
+        controls.append(Control([KEYDOWN], UP_KEYS, 0, self.player.sprite.accelerate, UP))
+        controls.append(Control([KEYDOWN], DOWN_KEYS, 0, self.player.sprite.accelerate, DOWN))
         return controls
 
     def quit(self):

@@ -13,6 +13,7 @@ class Character(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = self.area.center
         self.speed = 3
+        self.velocity = (0,0)
 
     def init_images(self):
         for direction in (DOWN, LEFT, RIGHT, UP):
@@ -25,21 +26,24 @@ class Character(pygame.sprite.Sprite):
         self.image.set_colorkey(self.colorkey)
 
     def update(self):
-        pass
+        oldpos = self.rect
+        newpos = oldpos.move(self.velocity)
+        if newpos.left < self.area.left or newpos.right > self.area.right or newpos.top < self.area.top or newpos.bottom > self.area.bottom:
+            self.velocity = 0
+        else:
+            self.rect = newpos
 
-    def move(self, direction):
+    def accelerate(self, direction):
         oldpos = self.rect
         if direction is LEFT:
             self.reimage(LEFT)
-            newpos = oldpos.move(-1 * self.speed, 0)
+            self.velocity = (-1 * self.speed, 0)
         elif direction is RIGHT:
             self.reimage(RIGHT)
-            newpos = oldpos.move(self.speed, 0)
+            self.velocity = (self.speed, 0)
         elif direction is UP:
-            newpos = oldpos.move(0, -1 * self.speed)
+            self.reimage(UP)
+            self.velocity = (0, -1 * self.speed)
         elif direction is DOWN:
-            newpos = oldpos.move(0, self.speed)
-        if newpos.left < self.area.left or newpos.right > self.area.right or newpos.top < self.area.top or newpos.bottom > self.area.bottom:
-            return
-        else:
-            self.rect = newpos
+            self.reimage(DOWN)
+            self.velocity = (0, self.speed)
