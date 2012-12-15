@@ -2,7 +2,12 @@ import pygame
 from modules.constants import *
 from modules import game
 
-all_particles = pygame.sprite.Group()
+class ParticleGroup(pygame.sprite.Group):
+    def draw(self, screen):
+        for particle in self.sprites():
+            screen.blit(particle.surface, particle.rect)
+
+all_particles = ParticleGroup()
 
 class Particle(pygame.sprite.Sprite):
     """

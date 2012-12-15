@@ -26,6 +26,5 @@ while True:
 
     game.screen.blit(game.background, (0,0))
     sprites.all_sprites.draw(game.screen)
-    for particle in particles.all_particles:
-        game.screen.blit(particle.surface, particle.rect)
+    particles.all_particles.draw(game.screen)
     pygame.display.flip()
