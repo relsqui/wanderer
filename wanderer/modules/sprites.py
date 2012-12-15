@@ -5,16 +5,15 @@ class Character(pygame.sprite.Sprite):
     def __init__(self, screen, sheet):
         super(Character, self).__init__()
         self.sheet = sheet
-        self.animations = [0, 1, 2, 3]
-        self.animation = None
+        self.animations = []
         self.init_images()
+        self.turn(DOWN)
+        self.image = self.animation.image()
 
         self.velocity = (0,0)
         self.speed = SPRITE_SPEED
 
-        self.turn(DOWN)
-        self.image = self.animation.image()
-
+        self.screen = screen
         self.area = screen.get_rect()
         self.rect = self.image.get_rect()
         self.rect.center = self.area.center
@@ -22,11 +21,11 @@ class Character(pygame.sprite.Sprite):
     def init_images(self):
         for direction in (DOWN, LEFT, RIGHT, UP):
             frames = []
-            for position in (0, 1, 2):
+            for position in xrange(3):
                 cursor = pygame.Rect(position * SPRITE_WIDTH, direction * SPRITE_HEIGHT, SPRITE_WIDTH, SPRITE_HEIGHT)
                 frames.append(self.sheet.subsurface(cursor))
             frames.append(frames[1])
-            self.animations[direction] = Animation(frames, WALK_RATE)
+            self.animations.append(Animation(frames, WALK_RATE))
 
     def update(self, loop_time):
         if self.velocity == (0,0):
@@ -53,7 +52,6 @@ class Character(pygame.sprite.Sprite):
             newpos = self.rect.move(angle)
             if newpos.left > self.area.left and newpos.right < self.area.right and newpos.top > self.area.top and newpos.bottom < self.area.bottom:
                 self.rect = newpos
-
         self.image = self.animation.image(loop_time)
 
 
