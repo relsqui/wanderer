@@ -15,7 +15,7 @@ class Turtle(pygame.sprite.Sprite):
         self.speed = 3
 
     def reimage(self, direction):
-        self.image = pygame.image.load(os.path.join("img", self.images[direction])).convert()
+        self.image = pygame.image.load(os.path.join("images", self.images[direction])).convert()
         self.image.set_colorkey(self.image.get_at((0,0)))
 
     def update(self):
