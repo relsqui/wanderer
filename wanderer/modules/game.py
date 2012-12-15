@@ -25,7 +25,7 @@ class Game(object):
         sprite_sheet = pygame.image.load(os.path.join("images", "lady_sprites.png")).convert()
         char_cursor = pygame.Rect(CHAR_WIDTH, 0, CHAR_WIDTH, CHAR_HEIGHT)
         char_sheet = sprite_sheet.subsurface(char_cursor)
-        self.player = player.Player(sprites.Character(self.screen, char_sheet), self.font)
+        self.player = player.Player(sprites.Character(self.screen, char_sheet, self.font))
         self.all_sprites = pygame.sprite.RenderPlain((self.player.sprite,))
         self.all_particles = particles.ParticleGroup()
         print " * sprites"

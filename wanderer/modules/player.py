@@ -3,10 +3,9 @@ from modules.constants import *
 from modules import particles
 
 class Player(object):
-    def __init__(self, sprite, font):
+    def __init__(self, sprite):
         super(Player, self).__init__()
         self.sprite = sprite
-        self.font = font
         self.last_greetings = [None for x in xrange(5)]
 
     def update(self):
@@ -19,4 +18,4 @@ class Player(object):
                 self.last_greetings.pop(0)
                 self.last_greetings.append(greeting)
                 break
-        self.sprite.say(all_particles, self.font, greeting)
+        self.sprite.say(all_particles, greeting)
