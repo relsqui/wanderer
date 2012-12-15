@@ -1,5 +1,6 @@
-import pygame
+import pygame, os
 from modules.constants import *
+from modules import game
 
 class Turtle(pygame.sprite.Sprite):
     def __init__(self):
@@ -8,7 +9,7 @@ class Turtle(pygame.sprite.Sprite):
         self.images[LEFT] = "Turtle-left.png"
         self.images[RIGHT] = "Turtle-right.png"
         self.reimage(RIGHT)
-        self.area = screen.get_rect()
+        self.area = game.screen.get_rect()
         self.rect = self.image.get_rect()
         self.rect.center = self.area.center
         self.speed = 3
@@ -19,20 +20,20 @@ class Turtle(pygame.sprite.Sprite):
 
     def update(self):
         for key in LEFT_KEYS:
-            if keys_down.get(key):
+            if game.keys_down.get(key):
                 self.reimage(LEFT)
                 self.move(LEFT)
         for key in RIGHT_KEYS:
-            if keys_down.get(key):
+            if game.keys_down.get(key):
                 self.reimage(RIGHT)
                 self.move(RIGHT)
         for key in UP_KEYS:
-            if keys_down.get(key):
+            if game.keys_down.get(key):
                 self.move(UP)
         for key in DOWN_KEYS:
-            if keys_down.get(key):
+            if game.keys_down.get(key):
                 self.move(DOWN)
-        if keys_down.get(K_SPACE):
+        if game.keys_down.get(K_SPACE):
             self.say("Hello!")
 
     def move(self, direction):
@@ -51,8 +52,8 @@ class Turtle(pygame.sprite.Sprite):
             self.rect = newpos
 
     def say(self, message):
-        text = font.render(message, False, TEXT_COLOR)
+        text = game.font.render(message, False, TEXT_COLOR)
         textpos = text.get_rect()
         textpos.centerx = self.rect.centerx
         textpos.centery = self.rect.centery - 20
-        background.blit(text, textpos)
+        game.background.blit(text, textpos)
