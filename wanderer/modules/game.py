@@ -49,8 +49,6 @@ class Game(object):
         self.player.update()
         self.all_sprites.update()
         self.all_particles.update(loop_time)
-        for control in self.controls:
-            control.update(loop_time)
         for timer in timers.all_timers:
             timer.update(loop_time)
 
@@ -64,20 +62,20 @@ class Game(object):
         handlers = dict()
 
         # Quit
-        controls.append(Control([QUIT, KEYDOWN], [K_q], 0, self.quit))
+        controls.append(Control([QUIT, KEYDOWN], [K_q], self.quit))
 
         # Random greeting
-        controls.append(Control([KEYDOWN], [K_SPACE], 200, self.player.greet))
+        controls.append(Control([KEYDOWN], [K_SPACE], self.player.greet))
 
         # Movement
-        controls.append(Control([KEYDOWN], LEFT_KEYS, 0, self.player.sprite.move, LEFT))
-        controls.append(Control([KEYUP], LEFT_KEYS, 0, self.player.sprite.accelerate, RIGHT, True))
-        controls.append(Control([KEYDOWN], RIGHT_KEYS, 0, self.player.sprite.move, RIGHT))
-        controls.append(Control([KEYUP], RIGHT_KEYS, 0, self.player.sprite.accelerate, LEFT, True))
-        controls.append(Control([KEYDOWN], UP_KEYS, 0, self.player.sprite.move, UP))
-        controls.append(Control([KEYUP], UP_KEYS, 0, self.player.sprite.accelerate, DOWN, True))
-        controls.append(Control([KEYDOWN], DOWN_KEYS, 0, self.player.sprite.move, DOWN))
-        controls.append(Control([KEYUP], DOWN_KEYS, 0, self.player.sprite.accelerate, UP, True))
+        controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.sprite.move, LEFT))
+        controls.append(Control([KEYUP], LEFT_KEYS, self.player.sprite.accelerate, RIGHT, True))
+        controls.append(Control([KEYDOWN], RIGHT_KEYS, self.player.sprite.move, RIGHT))
+        controls.append(Control([KEYUP], RIGHT_KEYS, self.player.sprite.accelerate, LEFT, True))
+        controls.append(Control([KEYDOWN], UP_KEYS, self.player.sprite.move, UP))
+        controls.append(Control([KEYUP], UP_KEYS, self.player.sprite.accelerate, DOWN, True))
+        controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.sprite.move, DOWN))
+        controls.append(Control([KEYUP], DOWN_KEYS, self.player.sprite.accelerate, UP, True))
 
         for control in controls:
             for event in control.events:
@@ -95,23 +93,13 @@ class Game(object):
 
 
 class Control(object):
-    def __init__(self, events, keys, timeout, act, *act_args):
+    def __init__(self, events, keys, act, *act_args):
         super(Control, self).__init__()
         self.events = events
         self.keys = keys
-        self.timeout = timeout
-        self.countdown = 0
         self.act = act
         self.act_args = act_args
 
-    def update(self, loop_time):
-        if self.countdown:
-            self.countdown -= loop_time
-            if self.countdown < 0:
-                self.countdown = 0
-
     def check(self, event):
-        if not self.countdown:
-                if event.type not in (KEYDOWN, KEYUP) or event.key in self.keys:
-                    self.act(*self.act_args)
-                    self.countdown = self.timeout
+        if event.type not in (KEYDOWN, KEYUP) or event.key in self.keys:
+            self.act(*self.act_args)
