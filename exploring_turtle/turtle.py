@@ -10,6 +10,9 @@ def input(events):
             sys.exit(0)
         elif event.type is KEYDOWN:
             game.keys_down[event.key] = True
+            if event.key is K_SPACE:
+                import random
+                player.say(random.choice(GREETINGS))
         elif event.type is KEYUP:
             game.keys_down[event.key] = False
 

@@ -35,8 +35,6 @@ class Turtle(pygame.sprite.Sprite):
         for key in DOWN_KEYS:
             if game.keys_down.get(key):
                 self.move(DOWN)
-        if game.keys_down.get(K_SPACE):
-            self.say("Hello!")
 
     def move(self, direction):
         oldpos = self.rect
