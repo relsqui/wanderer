@@ -9,7 +9,8 @@ HEIGHT = 1
 WINDOW_SIZE = (500,400)
 WINDOW_TITLE = "Hark! A turtle."
 BACKGROUND_COLOR = (50, 200, 70)
-TEXT_COLOR = (0, 0, 0)
+FONT_COLOR = (0, 0, 0)
+FONT_SIZE = 20
 
 # Controls
 LEFT_KEYS = (K_h, K_LEFT)

@@ -11,9 +11,9 @@ class Player(object):
     def update(self):
         pass
 
-    def say(self, message):
+    def say(self, all_particles, message):
         destination = self.sprite.rect.move(0, -20)
-        return particles.TextParticle(self.font, message, destination)
+        all_particles.add(particles.TextParticle(self.font, message, destination))
 
-    def greet(self):
-        return self.say(random.choice(GREETINGS))
+    def greet(self, all_particles):
+        self.say(all_particles, random.choice(GREETINGS))

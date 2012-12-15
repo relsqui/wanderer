@@ -41,7 +41,7 @@ class TextParticle(Particle):
     """
 
     def __init__(self, font, message, destination, timeout = None, fade = True):
-        text = font.render(message, False, TEXT_COLOR)
+        text = font.render(message, False, FONT_COLOR)
         textpos = text.get_rect()
         textpos.centerx = destination.centerx
         textpos.centery = destination.centery

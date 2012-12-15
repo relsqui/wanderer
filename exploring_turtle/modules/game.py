@@ -18,7 +18,7 @@ class Game(object):
         self.screen = pygame.display.get_surface()
         self.background = pygame.Surface(self.screen.get_size()).convert()
         self.background.fill(BACKGROUND_COLOR)
-        self.font = pygame.font.Font(None, 20)
+        self.font = pygame.font.Font(None, FONT_SIZE)
         print "* display"
 
         # Sprites and player
@@ -62,15 +62,12 @@ class Game(object):
     def init_controls(self):
         controls = []
         controls.append(Control([QUIT], [K_q], 0, sys.exit, 0))
-        controls.append(Control([], [K_SPACE], 200, self.spawn_particle, self.player.greet()))
+        controls.append(Control([], [K_SPACE], 200, self.player.greet, self.all_particles))
         controls.append(Control([], LEFT_KEYS, 0, self.player.sprite.move, LEFT))
         controls.append(Control([], RIGHT_KEYS, 0, self.player.sprite.move, RIGHT))
         controls.append(Control([], UP_KEYS, 0, self.player.sprite.move, UP))
         controls.append(Control([], DOWN_KEYS, 0, self.player.sprite.move, DOWN))
         return controls
-
-    def spawn_particle(self, particle):
-        self.all_particles.add(particle)
 
 
 class Control(object):
@@ -88,20 +85,15 @@ class Control(object):
             self.countdown -= loop_time
             if self.countdown < 0:
                 self.countdown = 0
-            print "timeout {}, countdown {}, loop_time {}".format(self.timeout, self.countdown, loop_time)
         else:
             for key in self.keys:
                 if keys_down.get(key):
-                    print "running {}".format(self)
-                    print "{}({})".format(self.act, self.act_args)
                     self.act(*self.act_args)
                     self.countdown = self.timeout
                     return
             else:
                 for event in events:
                     if event in self.events:
-                        print "running {}".format(self)
-                        print "{}({})".format(self.act, self.act_args)
                         self.act(*self.act_args)
                         self.countdown = self.timeout
                         return
