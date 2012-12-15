@@ -2,8 +2,7 @@
 
 import pygame, sys
 from modules.constants import *
-from modules.sprites import Turtle
-from modules import game
+from modules import game, sprites, particles
 
 def input(events):
     for event in events:
@@ -15,15 +14,18 @@ def input(events):
             game.keys_down[event.key] = False
 
 # Set up sprites.
-player = Turtle()
-allsprites = pygame.sprite.RenderPlain((player, ))
+player = sprites.Turtle()
+sprites.all_sprites.add(player)
 
 while True:
-    # OKAY LET'S DO THIS THING
+    # Here we go!
     game.clock.tick(60)
     input(pygame.event.get())
-    allsprites.update()
+    sprites.all_sprites.update()
+    particles.all_particles.update()
 
     game.screen.blit(game.background, (0,0))
-    allsprites.draw(game.screen)
+    sprites.all_sprites.draw(game.screen)
+    for particle in particles.all_particles:
+        game.screen.blit(particle.surface, particle.rect)
     pygame.display.flip()

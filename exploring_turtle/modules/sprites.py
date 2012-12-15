@@ -1,6 +1,8 @@
 import pygame, os
 from modules.constants import *
-from modules import game
+from modules import game, particles
+
+all_sprites = pygame.sprite.RenderClear()
 
 class Turtle(pygame.sprite.Sprite):
     def __init__(self):
@@ -52,8 +54,5 @@ class Turtle(pygame.sprite.Sprite):
             self.rect = newpos
 
     def say(self, message):
-        text = game.font.render(message, False, TEXT_COLOR)
-        textpos = text.get_rect()
-        textpos.centerx = self.rect.centerx
-        textpos.centery = self.rect.centery - 20
-        game.background.blit(text, textpos)
+        destination = self.rect.move(0, -20)
+        particles.all_particles.add(particles.TextParticle(message, destination))

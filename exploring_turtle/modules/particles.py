@@ -2,6 +2,8 @@ import pygame
 from modules.constants import *
 from modules import game
 
+all_particles = pygame.sprite.Group()
+
 class Particle(pygame.sprite.Sprite):
     """
     A temporary sprite which will disappear after a short time. Arguments:
@@ -16,7 +18,8 @@ class Particle(pygame.sprite.Sprite):
         self.fade = fade
         self.timeout = timeout
         self.countdown = self.timeout
-        self.contents = surface
+        self.surface = surface
+        self.rect = location
 
     def update(self):
         self.countdown -= game.clock.get_time()
@@ -33,9 +36,11 @@ class TextParticle(Particle):
         fade (integer)
     """
 
-    def __init__(self, message, destination, timeout = PARTICLE_DEFAULT_TIMEOUT, fade = PARTICLE_DEFAULT_FADE):
+    def __init__(self, message, destination, timeout = None, fade = PARTICLE_DEFAULT_FADE):
         text = game.font.render(message, False, TEXT_COLOR)
         textpos = text.get_rect()
         textpos.centerx = destination.centerx
         textpos.centery = destination.centery
+        if timeout is None:
+            timeout = len(message) * TEXT_TIMEOUT_PER_CHAR
         super(TextParticle, self).__init__(text, textpos, timeout, fade)
