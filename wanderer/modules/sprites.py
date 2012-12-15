@@ -28,9 +28,7 @@ class Character(pygame.sprite.Sprite):
     def update(self):
         oldpos = self.rect
         newpos = oldpos.move(self.velocity)
-        if newpos.left < self.area.left or newpos.right > self.area.right or newpos.top < self.area.top or newpos.bottom > self.area.bottom:
-            self.velocity = (0,0)
-        else:
+        if newpos.left > self.area.left and newpos.right < self.area.right and newpos.top > self.area.top and newpos.bottom < self.area.bottom:
             self.rect = newpos
 
     def move(self, direction):

@@ -32,7 +32,7 @@ class Game(object):
 
         # Miscellany
         self.clock = pygame.time.Clock()
-        self.controls = self.init_controls()
+        self.init_controls()
         print " * controls & clock"
 
 
@@ -41,13 +41,16 @@ class Game(object):
         loop_time = self.clock.get_time()
 
         new_events = pygame.event.get()
-
-        for control in self.controls:
-            control.check(loop_time, new_events)
+        for event in new_events:
+            if self.handlers.get(event.type):
+                for handler in self.handlers[event.type]:
+                    handler.check(event)
 
         self.player.update()
         self.all_sprites.update()
         self.all_particles.update(loop_time)
+        for control in self.controls:
+            control.update(loop_time)
 
         self.screen.blit(self.background, (0,0))
         self.all_sprites.draw(self.screen)
@@ -56,8 +59,15 @@ class Game(object):
 
     def init_controls(self):
         controls = []
+        handlers = dict()
+
+        # Quit
         controls.append(Control([QUIT, KEYDOWN], [K_q], 0, self.quit))
+
+        # Random greeting
         controls.append(Control([KEYDOWN], [K_SPACE], 200, self.player.greet, self.all_particles))
+
+        # Movement
         controls.append(Control([KEYDOWN], LEFT_KEYS, 0, self.player.sprite.move, LEFT))
         controls.append(Control([KEYUP], LEFT_KEYS, 0, self.player.sprite.accelerate, RIGHT))
         controls.append(Control([KEYDOWN], RIGHT_KEYS, 0, self.player.sprite.move, RIGHT))
@@ -66,7 +76,16 @@ class Game(object):
         controls.append(Control([KEYUP], UP_KEYS, 0, self.player.sprite.accelerate, DOWN))
         controls.append(Control([KEYDOWN], DOWN_KEYS, 0, self.player.sprite.move, DOWN))
         controls.append(Control([KEYUP], DOWN_KEYS, 0, self.player.sprite.accelerate, UP))
-        return controls
+
+        for control in controls:
+            for event in control.events:
+                if handlers.get(event):
+                    handlers[event].append(control)
+                else:
+                    handlers[event] = [control]
+
+        self.controls = controls
+        self.handlers = handlers
 
     def quit(self):
         print "Goodbye!"
@@ -83,14 +102,14 @@ class Control(object):
         self.act = act
         self.act_args = act_args
 
-    def check(self, loop_time, events = []):
+    def update(self, loop_time):
         if self.countdown:
             self.countdown -= loop_time
             if self.countdown < 0:
                 self.countdown = 0
-        else:
-            for event in events:
-                if event.type in self.events:
-                    if event.type not in (KEYDOWN, KEYUP) or event.key in self.keys:
-                        self.act(*self.act_args)
-                        self.countdown = self.timeout
+
+    def check(self, event):
+        if not self.countdown:
+                if event.type not in (KEYDOWN, KEYUP) or event.key in self.keys:
+                    self.act(*self.act_args)
+                    self.countdown = self.timeout
