@@ -1,8 +1,7 @@
 #!/usr/bin/python
 
 import pygame, sys, os
-from pygame.locals import *
-from exploring_turtle.constants import *
+from modules.constants import *
 
 if not pygame.font:
     print "Couldn't load pygame.font!"

@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from pygame.locals import *
+
 WIDTH = 0
 HEIGHT = 1
 WINDOW_SIZE = (600,200)
