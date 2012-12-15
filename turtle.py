@@ -3,11 +3,16 @@
 import pygame, sys, os
 from pygame.locals import *
 
+if not pygame.font:
+    print "Couldn't load pygame.font!"
+    sys.exit(1)
+
 WIDTH = 0
 HEIGHT = 1
 WINDOW_SIZE = (600,200)
 WINDOW_TITLE = "Hark! A turtle."
 BACKGROUND_COLOR = (50, 200, 70)
+TEXT_COLOR = (0, 0, 0)
 LEFT_KEYS = (K_h, K_LEFT)
 RIGHT_KEYS = (K_l, K_RIGHT)
 UP_KEYS = (K_k, K_UP)
@@ -55,6 +60,8 @@ class Turtle(pygame.sprite.Sprite):
         for key in DOWN_KEYS:
             if keys_down.get(key):
                 self.move(DOWN)
+        if keys_down.get(K_SPACE):
+            self.say("Hello!")
 
     def move(self, direction):
         oldpos = self.rect
@@ -71,6 +78,13 @@ class Turtle(pygame.sprite.Sprite):
         else:
             self.rect = newpos
 
+    def say(self, message):
+        text = font.render(message, False, TEXT_COLOR)
+        textpos = text.get_rect()
+        textpos.centerx = self.rect.centerx
+        textpos.centery = self.rect.centery - 20
+        background.blit(text, textpos)
+
 # Set up pygame and the window.
 pygame.init()
 window = pygame.display.set_mode(WINDOW_SIZE)
@@ -86,6 +100,7 @@ allsprites = pygame.sprite.RenderPlain((player, ))
 # Other setup.
 keys_down = dict()
 clock = pygame.time.Clock()
+font = pygame.font.Font(None, 20)
 
 while True:
     # OKAY LET'S DO THIS THING
