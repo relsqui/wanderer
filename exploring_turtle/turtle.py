@@ -2,23 +2,11 @@
 
 import pygame, sys, os
 from pygame.locals import *
+from exploring_turtle.constants import *
 
 if not pygame.font:
     print "Couldn't load pygame.font!"
     sys.exit(1)
-
-WIDTH = 0
-HEIGHT = 1
-WINDOW_SIZE = (600,200)
-WINDOW_TITLE = "Hark! A turtle."
-BACKGROUND_COLOR = (50, 200, 70)
-TEXT_COLOR = (0, 0, 0)
-LEFT_KEYS = (K_h, K_LEFT)
-RIGHT_KEYS = (K_l, K_RIGHT)
-UP_KEYS = (K_k, K_UP)
-DOWN_KEYS = (K_j, K_DOWN)
-CONTROLS = (LEFT_KEYS, RIGHT_KEYS, UP_KEYS, DOWN_KEYS)
-LEFT, RIGHT, UP, DOWN = (0, 1, 2, 3)
 
 def input(events):
     for event in events:
@@ -42,7 +30,7 @@ class Turtle(pygame.sprite.Sprite):
         self.speed = 3
 
     def reimage(self, direction):
-        self.image = pygame.image.load(self.images[direction]).convert()
+        self.image = pygame.image.load(os.path.join("img", self.images[direction])).convert()
         self.image.set_colorkey(self.image.get_at((0,0)))
 
     def update(self):
