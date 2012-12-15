@@ -7,7 +7,7 @@ class Player(object):
         super(Player, self).__init__()
         self.sprite = sprite
         self.font = font
-        self.last_greetings = [None, None, None]
+        self.last_greetings = [None for x in xrange(5)]
 
     def update(self):
         pass

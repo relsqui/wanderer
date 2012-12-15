@@ -28,7 +28,7 @@ TEXT_TIMEOUT_PER_CHAR = 150     # milliseconds
 FONT_COLOR = (0, 0, 0)
 FONT_SIZE = 20  # pixels
 GREETINGS = []
-f = open(os.path.join("data", "greetings"))
+f = open(os.path.join("data", "greetings.txt"))
 for line in f:
     GREETINGS.append(line.strip())
 f.close()
