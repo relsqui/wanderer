@@ -18,4 +18,4 @@ class Player(object):
                 self.last_greetings.pop(0)
                 self.last_greetings.append(greeting)
                 break
-        self.sprite.say(greeting)
+        self.sprite.interject(greeting)
