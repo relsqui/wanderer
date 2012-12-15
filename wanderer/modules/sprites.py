@@ -26,7 +26,7 @@ class Character(pygame.sprite.Sprite):
                 cursor = pygame.Rect(position * SPRITE_WIDTH, direction * SPRITE_HEIGHT, SPRITE_WIDTH, SPRITE_HEIGHT)
                 frames.append(self.sheet.subsurface(cursor))
             frames.append(frames[1])
-            self.animations[direction] = Animation(frames, self.sheet.get_at((0,0)), WALK_RATE)
+            self.animations[direction] = Animation(frames, WALK_RATE)
 
     def update(self, loop_time):
         if self.velocity == (0,0):
@@ -87,15 +87,17 @@ class Character(pygame.sprite.Sprite):
 
 
 class Animation(object):
-    def __init__(self, frames, colorkey, speed, default = 1):
+    def __init__(self, frames, speed, colorkey = None, default = 1):
         super(Animation, self).__init__()
         self.frames = frames
-        self.colorkey = colorkey
         self.speed = speed
         self.default = default
         self.current = default
         self.countdown = speed
         self.running = False
+        if not colorkey:
+            colorkey = self.frames[default].get_at((0,0))
+        self.colorkey = colorkey
 
     def update(self, loop_time):
         if self.running:
