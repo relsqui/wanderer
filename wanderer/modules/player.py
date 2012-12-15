@@ -13,7 +13,8 @@ class Player(object):
         pass
 
     def say(self, all_particles, message):
-        destination = self.sprite.rect.move(0, -20)
+        offset = -1 * (self.sprite.rect.height/2 + FONT_SIZE/2 + 2)
+        destination = self.sprite.rect.move(0, offset)
         all_particles.add(particles.TextParticle(self.font, message, destination))
 
     def greet(self, all_particles):
