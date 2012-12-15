@@ -1,13 +1,10 @@
 import pygame
 from modules.constants import *
-from modules import game
 
 class ParticleGroup(pygame.sprite.Group):
     def draw(self, screen):
         for particle in self.sprites():
             screen.blit(particle.surface, particle.rect)
-
-all_particles = ParticleGroup()
 
 class Particle(pygame.sprite.Sprite):
     """
@@ -26,8 +23,8 @@ class Particle(pygame.sprite.Sprite):
         self.surface = surface
         self.rect = location
 
-    def update(self):
-        self.countdown -= game.clock.get_time()
+    def update(self, loop_time):
+        self.countdown -= loop_time
         if self.countdown < 0:
             self.kill()
         elif self.fade:
@@ -43,8 +40,8 @@ class TextParticle(Particle):
         fade (boolean)
     """
 
-    def __init__(self, message, destination, timeout = None, fade = True):
-        text = game.font.render(message, False, TEXT_COLOR)
+    def __init__(self, font, message, destination, timeout = None, fade = True):
+        text = font.render(message, False, TEXT_COLOR)
         textpos = text.get_rect()
         textpos.centerx = destination.centerx
         textpos.centery = destination.centery

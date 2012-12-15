@@ -1,19 +1,107 @@
-import pygame
+import pygame, sys
 from modules.constants import *
+from modules import player, sprites, particles
 
-if not pygame.font:
-    print "Couldn't load pygame.font!"
-    sys.exit(1)
+class Game(object):
+    def __init__(self):
+        print "Initializing game ..."
+        super(Game, self).__init__()
+        pygame.init()
+        if not pygame.font:
+            print "Couldn't load pygame.font!"
+            sys.exit(1)
+        print "* pygame"
 
-#Set up pygame and the window.
-pygame.init()
-window = pygame.display.set_mode(WINDOW_SIZE)
-pygame.display.set_caption(WINDOW_TITLE)
-screen = pygame.display.get_surface()
-background = pygame.Surface(screen.get_size()).convert()
-background.fill(BACKGROUND_COLOR)
+        # Display and screen
+        self.window = pygame.display.set_mode(WINDOW_SIZE)
+        pygame.display.set_caption(WINDOW_TITLE)
+        self.screen = pygame.display.get_surface()
+        self.background = pygame.Surface(self.screen.get_size()).convert()
+        self.background.fill(BACKGROUND_COLOR)
+        self.font = pygame.font.Font(None, 20)
+        print "* display"
 
-# Other setup.
-keys_down = dict()
-clock = pygame.time.Clock()
-font = pygame.font.Font(None, 20)
+        # Sprites and player
+        self.player = player.Player(sprites.Turtle(self.screen), self.font)
+        self.all_sprites = pygame.sprite.RenderPlain((self.player.sprite,))
+        self.all_particles = particles.ParticleGroup()
+        print "* sprites"
+
+        # Miscellany
+        self.keys_down = dict()
+        self.clock = pygame.time.Clock()
+        self.controls = self.init_controls()
+        print "* controls & misc."
+
+
+    def loop(self):
+        self.clock.tick(60)
+        loop_time = self.clock.get_time()
+
+        new_events = []
+        for event in pygame.event.get():
+            if event.type is KEYDOWN:
+                self.keys_down[event.key] = True
+            elif event.type is KEYUP:
+                self.keys_down[event.key] = False
+            else:
+                new_events.append(event)
+
+        for control in self.controls:
+            control.check(loop_time, self.keys_down, new_events)
+
+        self.player.update()
+        self.all_sprites.update()
+        self.all_particles.update(loop_time)
+
+        self.screen.blit(self.background, (0,0))
+        self.all_sprites.draw(self.screen)
+        self.all_particles.draw(self.screen)
+        pygame.display.flip()
+
+    def init_controls(self):
+        controls = []
+        controls.append(Control([QUIT], [K_q], 0, sys.exit, 0))
+        controls.append(Control([], [K_SPACE], 200, self.spawn_particle, self.player.greet()))
+        controls.append(Control([], LEFT_KEYS, 0, self.player.sprite.move, LEFT))
+        controls.append(Control([], RIGHT_KEYS, 0, self.player.sprite.move, RIGHT))
+        controls.append(Control([], UP_KEYS, 0, self.player.sprite.move, UP))
+        controls.append(Control([], DOWN_KEYS, 0, self.player.sprite.move, DOWN))
+        return controls
+
+    def spawn_particle(self, particle):
+        self.all_particles.add(particle)
+
+
+class Control(object):
+    def __init__(self, events, keys, timeout, act, *act_args):
+        super(Control, self).__init__()
+        self.events = events
+        self.keys = keys
+        self.timeout = timeout
+        self.countdown = 0
+        self.act = act
+        self.act_args = act_args
+
+    def check(self, loop_time, keys_down = [], events = []):
+        if self.countdown:
+            self.countdown -= loop_time
+            if self.countdown < 0:
+                self.countdown = 0
+            print "timeout {}, countdown {}, loop_time {}".format(self.timeout, self.countdown, loop_time)
+        else:
+            for key in self.keys:
+                if keys_down.get(key):
+                    print "running {}".format(self)
+                    print "{}({})".format(self.act, self.act_args)
+                    self.act(*self.act_args)
+                    self.countdown = self.timeout
+                    return
+            else:
+                for event in events:
+                    if event in self.events:
+                        print "running {}".format(self)
+                        print "{}({})".format(self.act, self.act_args)
+                        self.act(*self.act_args)
+                        self.countdown = self.timeout
+                        return
