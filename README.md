@@ -1,4 +1,4 @@
-exploring_turtle
+Wanderer
 ================
 
 Learning to use pygame.
