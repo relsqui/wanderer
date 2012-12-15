@@ -25,6 +25,7 @@ DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 # Timeouts
 PARTICLE_DEFAULT_TIMEOUT = 500  # milliseconds
 TEXT_TIMEOUT_PER_CHAR = 150     # milliseconds
+INTERJECT_TIMEOUT = 300         # milliseconds
 
 # Text
 FONT_COLOR = (0, 0, 0)

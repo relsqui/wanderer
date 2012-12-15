@@ -21,6 +21,7 @@ class Character(pygame.sprite.Sprite):
 
         self.font = font
         self.all_particles = all_particles
+        self.interject_ok = True
 
     def init_images(self):
         for direction in (DOWN, LEFT, RIGHT, UP):
@@ -57,7 +58,7 @@ class Character(pygame.sprite.Sprite):
             if newpos.left > self.area.left and newpos.right < self.area.right and newpos.top > self.area.top and newpos.bottom < self.area.bottom:
                 self.rect = newpos
             else:
-                self.say(random.choice(OUCHES))
+                self.interject(random.choice(OUCHES))
         self.image = self.animation.image()
 
 
@@ -93,6 +94,18 @@ class Character(pygame.sprite.Sprite):
         offset = -1 * (self.rect.height/2 + FONT_SIZE/2 + 2)
         destination = self.rect.move(0, offset)
         self.all_particles.add(particles.TextParticle(self.font, message, destination))
+
+    def reset_interject(self):
+        self.interject_ok = True
+
+    def interject(self, message):
+        """
+        Low-priority say(); discard if too frequent.
+        """
+        if self.interject_ok:
+            self.say(message)
+            self.interject_ok = False
+            timers.Timer(INTERJECT_TIMEOUT, self.reset_interject)
 
 
 class Animation(object):
