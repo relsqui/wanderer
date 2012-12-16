@@ -18,8 +18,11 @@ SPRITE_WIDTH = 32   # pixels
 SPRITE_HEIGHT = 34  # pixels
 CHAR_WIDTH = 96     # pixels
 CHAR_HEIGHT = 136   # pixels
+SHEET_ROWS = 2
+SHEET_COLUMNS = 4
 WALK_RATE = 250     # milliseconds between animation frames
 PLAYER_SPEED = 3    # pixels per tick
+LADY_SPRITES = os.path.join("images", "lady_sprites.png")
 
 # Controls
 KEY_DELAY = 50

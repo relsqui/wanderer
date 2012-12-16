@@ -1,6 +1,6 @@
-import random
+import random, pygame
 from modules.constants import *
-from modules import particles, timers
+from modules import particles, timers, sprites
 
 class Player(object):
     """
@@ -11,10 +11,10 @@ class Player(object):
         all_particles   (list of all particles, for appending speech to)
     """
 
-    def __init__(self, sprite, screen, font, all_particles):
+    def __init__(self, screen, font, all_particles):
         super(Player, self).__init__()
         self.area = screen.get_rect()
-        self.sprite = sprite
+        self.set_sprite()
         self.sprite.rect.center = self.area.center
 
         self.speed = PLAYER_SPEED
@@ -23,6 +23,17 @@ class Player(object):
         self.last_greetings = [None for x in xrange(5)]
         self.interject_ok = True
         self.all_particles = all_particles
+
+    def set_sprite(self, spriteno = 2):
+        spriteno -= 1
+        row = spriteno % SHEET_COLUMNS
+        column = spriteno / SHEET_COLUMNS
+        charx = row * CHAR_WIDTH
+        chary = column * CHAR_HEIGHT
+        char_cursor = pygame.Rect(charx, chary, CHAR_WIDTH, CHAR_HEIGHT)
+        sprite_sheet = pygame.image.load(LADY_SPRITES).convert()
+        char_sheet = sprite_sheet.subsurface(char_cursor)
+        self.sprite = sprites.Character(char_sheet)
 
     def update(self):
         "Placeholder for when there's more to update."
