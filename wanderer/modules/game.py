@@ -81,7 +81,7 @@ class Game(object):
         controls.append(Control([KEYDOWN], RIGHT_KEYS, self.player.sprite.move, RIGHT))
         controls.append(Control([KEYDOWN], UP_KEYS, self.player.sprite.move, UP))
         controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.sprite.move, DOWN))
-        controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.sprite.animation.stop))
+        controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.sprite.stop_animation))
 
         for control in controls:
             for event in control.events:

@@ -17,6 +17,7 @@ class Character(pygame.sprite.Sprite):
         self.sheet = sheet
         self.animations = []
         self.init_images()
+        self.animation = self.animations[DOWN]
         self.direction = DOWN
         self.update()
 
@@ -44,12 +45,12 @@ class Character(pygame.sprite.Sprite):
 
     def update(self):
         "Update the sprite image."
-        self.animation = self.animations[self.direction]
         self.image = self.animation.image()
 
     def move(self, direction):
         "Try to move in a direction."
         self.direction = direction
+        self.animation = self.animations[direction]
         self.animation.start()
         if direction is UP:
             vector = (0, -self.speed)
@@ -64,10 +65,20 @@ class Character(pygame.sprite.Sprite):
             self.rect = newpos
         else:
             self.interject(random.choice(OUCHES))
+    
+    def stop_animation(self):
+        "Internal. Stops whichever animation is currently running."
+        self.animation.stop()
 
     def reset_interject(self):
         "Internal. Reset interjection timer."
         self.interject_ok = True
+
+    def say(self, message):
+        "Emit a message as a floating particle."
+        offset = -1 * (self.rect.height/2 + FONT_SIZE/2 + 2)
+        destination = self.rect.move(0, offset)
+        self.all_particles.add(particles.TextParticle(self.font, message, destination))
 
     def interject(self, message):
         "Low-priority say(); discard if too frequent."
@@ -91,7 +102,7 @@ class Animation(object):
         self.frames = frames
         self.speed = speed
         self.default = default
-        self.current = default - 1
+        self.current = default
         self.running = False
         if not colorkey:
             colorkey = self.frames[default].get_at((0,0))
@@ -112,7 +123,6 @@ class Animation(object):
     def start(self):
         "Start the animation."
         if not self.running:
-            print "starting animation"
             self.running = True
             self.cycle()
 
@@ -120,4 +130,3 @@ class Animation(object):
         "Pause the animation."
         self.running = False
         self.current = self.default
-        print "stopping animation"
