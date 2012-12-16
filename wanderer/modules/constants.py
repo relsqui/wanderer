@@ -5,6 +5,9 @@ from pygame.locals import *
 Various constants for use in other modules.
 """
 
+# General
+DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
+
 # Window
 WINDOW_SIZE = (500,400)
 WINDOW_TITLE = "Wanderer"
@@ -19,12 +22,13 @@ WALK_RATE = 250     # milliseconds between animation frames
 SPRITE_SPEED = 3    # pixels per tick
 
 # Controls
+KEY_DELAY = 50
+KEY_INTERVAL = 10
 LEFT_KEYS = (K_h, K_LEFT)
 RIGHT_KEYS = (K_l, K_RIGHT)
 UP_KEYS = (K_k, K_UP)
 DOWN_KEYS = (K_j, K_DOWN)
 CONTROLS = (LEFT_KEYS, RIGHT_KEYS, UP_KEYS, DOWN_KEYS)
-DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 
 # Timers
 PARTICLE_DEFAULT_TIMEOUT = 500  # milliseconds

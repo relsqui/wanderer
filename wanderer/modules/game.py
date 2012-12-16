@@ -18,14 +18,15 @@ class Game(object):
             sys.exit(1)
         print " * pygame"
 
-        # Display and screen
+        # Interface
         self.window = pygame.display.set_mode(WINDOW_SIZE)
         pygame.display.set_caption(WINDOW_TITLE)
         self.screen = pygame.display.get_surface()
         self.background = pygame.Surface(self.screen.get_size()).convert()
         self.background.fill(BACKGROUND_COLOR)
         self.font = pygame.font.Font(None, FONT_SIZE)
-        print " * display"
+        pygame.key.set_repeat(KEY_DELAY, KEY_INTERVAL)
+        print " * interface"
 
         # Sprites and player
         self.all_particles = particles.ParticleGroup()
@@ -77,13 +78,10 @@ class Game(object):
 
         # Movement
         controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.sprite.move, LEFT))
-        controls.append(Control([KEYUP], LEFT_KEYS, self.player.sprite.accelerate, RIGHT, True))
         controls.append(Control([KEYDOWN], RIGHT_KEYS, self.player.sprite.move, RIGHT))
-        controls.append(Control([KEYUP], RIGHT_KEYS, self.player.sprite.accelerate, LEFT, True))
         controls.append(Control([KEYDOWN], UP_KEYS, self.player.sprite.move, UP))
-        controls.append(Control([KEYUP], UP_KEYS, self.player.sprite.accelerate, DOWN, True))
         controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.sprite.move, DOWN))
-        controls.append(Control([KEYUP], DOWN_KEYS, self.player.sprite.accelerate, UP, True))
+        controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.sprite.animation.stop))
 
         for control in controls:
             for event in control.events:
@@ -108,8 +106,6 @@ class Control(object):
         keys        (list of key constants to respond to)
         act         (function to call when invoked)
         *act_args   (arguments to function)
-
-    To make something happen while a key is being held down, make one control which starts the action on KEYDOWN and another which ends it on KEYUP.
     """
 
     def __init__(self, events, keys, act, *act_args):

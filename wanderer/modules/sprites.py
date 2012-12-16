@@ -17,8 +17,8 @@ class Character(pygame.sprite.Sprite):
         self.sheet = sheet
         self.animations = []
         self.init_images()
-        self.turn(DOWN)
-        self.image = self.animation.image()
+        self.direction = DOWN
+        self.update()
 
         self.velocity = (0,0)
         self.speed = SPRITE_SPEED
@@ -43,72 +43,27 @@ class Character(pygame.sprite.Sprite):
             self.animations.append(Animation(frames, WALK_RATE))
 
     def update(self):
-        "Update the position and orientation of the sprite."
-        if self.velocity == (0,0):
-            self.animation.stop()
-            self.position = 1
-        else:
-            self.animation.start()
-            angle = self.velocity
-            if self.velocity[0] and self.velocity[1]:
-                if self.direction in (LEFT, RIGHT):
-                    angle = (self.velocity[0], 0)
-                else:
-                    angle = (0, self.velocity[1])
-            elif self.velocity[0]:
-                if self.velocity[0] > 0:
-                    self.turn(RIGHT)
-                else:
-                    self.turn(LEFT)
-            elif self.velocity[1]:
-                if self.velocity[1] > 0:
-                    self.turn(DOWN)
-                else:
-                    self.turn(UP)
-            newpos = self.rect.move(angle)
-            if newpos.left > self.area.left and newpos.right < self.area.right and newpos.top > self.area.top and newpos.bottom < self.area.bottom:
-                self.rect = newpos
-            else:
-                self.interject(random.choice(OUCHES))
+        "Update the sprite image."
+        self.animation = self.animations[self.direction]
         self.image = self.animation.image()
-
 
     def move(self, direction):
         "Try to move in a direction."
-        self.turn(direction)
-        self.accelerate(direction)
-
-    def turn(self, direction):
-        "Change facing direction."
         self.direction = direction
-        self.animation = self.animations[direction]
-
-    def accelerate(self, direction, to_stop = False):
-        "Change sprite velocity."
-        xvel, yvel = self.velocity
-        if direction is LEFT:
-            if xvel or not to_stop:
-                xvel -= self.speed
-        elif direction is RIGHT:
-            if xvel or not to_stop:
-                xvel += self.speed
-        elif direction is UP:
-            if yvel or not to_stop:
-                yvel -= self.speed
+        self.animation.start()
+        if direction is UP:
+            vector = (0, -self.speed)
         elif direction is DOWN:
-            if yvel or not to_stop:
-                yvel += self.speed
-        xvel = min(xvel, self.speed)
-        xvel = max(xvel, -1 * self.speed)
-        yvel = min(yvel, self.speed)
-        yvel = max(yvel, -1 * self.speed)
-        self.velocity = (xvel, yvel)
-    
-    def say(self, message):
-        "Emit a message as a floating particle."
-        offset = -1 * (self.rect.height/2 + FONT_SIZE/2 + 2)
-        destination = self.rect.move(0, offset)
-        self.all_particles.add(particles.TextParticle(self.font, message, destination))
+            vector = (0, self.speed)
+        elif direction is LEFT:
+            vector = (-self.speed, 0)
+        else:
+            vector = (self.speed, 0)
+        newpos = self.rect.move(vector)
+        if newpos.left > self.area.left and newpos.right < self.area.right and newpos.top > self.area.top and newpos.bottom < self.area.bottom:
+            self.rect = newpos
+        else:
+            self.interject(random.choice(OUCHES))
 
     def reset_interject(self):
         "Internal. Reset interjection timer."
@@ -157,6 +112,7 @@ class Animation(object):
     def start(self):
         "Start the animation."
         if not self.running:
+            print "starting animation"
             self.running = True
             self.cycle()
 
@@ -164,3 +120,4 @@ class Animation(object):
         "Pause the animation."
         self.running = False
         self.current = self.default
+        print "stopping animation"
