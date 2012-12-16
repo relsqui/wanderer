@@ -1,4 +1,13 @@
 class Timer(object):
+    """
+    Calls a function after a specified interval. Arguments:
+        timeout     (milliseconds)
+        action      (function)
+        *arguments  (will be passed to function)
+
+    New Timers automatically add themselves to the list of timers when instantiated and remove themselves when they expire.
+    """
+
     def __init__(self, timeout, action, *arguments):
         super(Timer, self).__init__()
         self.counter = timeout

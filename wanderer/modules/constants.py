@@ -1,6 +1,10 @@
 import os
 from pygame.locals import *
 
+"""
+Various constants for use in other modules.
+"""
+
 # Window
 WINDOW_SIZE = (500,400)
 WINDOW_TITLE = "Wanderer"

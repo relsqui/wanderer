@@ -10,10 +10,11 @@ class ParticleGroup(pygame.sprite.Group):
 class Particle(pygame.sprite.Sprite):
     """
     A temporary sprite which will disappear after a short time. Arguments:
-        surface (pygames.Surface)
-        location (pygames.Rect, will use center point)
-        timeout (integer, milliseconds)
-        fade (integer)
+        surface     (pygames.Surface)
+        location    (pygames.Rect, particle will be centered on it)
+        timeout     (milliseconds)
+        vector      ((x, y) integer tuple, defaults to (0,0) for no movement)
+        fade        (boolean, defaults to False)
     """
 
     def __init__(self, surface, location, timeout = PARTICLE_DEFAULT_TIMEOUT, vector = (0,0), fade = False):
@@ -30,19 +31,17 @@ class Particle(pygame.sprite.Sprite):
         timers.Timer(timeout, self.kill)
 
     def fade(self):
+        "Internal. Change the particle transparency."
         self.surface.set_alpha(self.surface.get_alpha() - FADE_AMOUNT)
 
     def update(self):
+        "Update the particle position."
         self.rect.move_ip(self.vector)
 
 
 class TextParticle(Particle):
     """
-    A particle of rendered text. Arguments:
-        message (string)
-        location (pygames.Rect, will use center point)
-        timeout (integer, milliseconds)
-        fade (boolean)
+    A particle of rendered text. See Particle for arguments. Defaults to a vector of (0, -2), with fading, and will automatically calculate a timeout from string length if none is provided.
     """
 
     def __init__(self, font, message, location, timeout = None, vector = (0, -2), fade = True):

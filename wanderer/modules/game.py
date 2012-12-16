@@ -3,6 +3,12 @@ from modules.constants import *
 from modules import player, sprites, particles, timers
 
 class Game(object):
+    """
+    Game manager for display, timers, controls, etc.
+
+    No arguments.
+    """
+
     def __init__(self):
         print "Welcome! Initializing game ..."
         super(Game, self).__init__()
@@ -37,6 +43,7 @@ class Game(object):
 
 
     def loop(self):
+        "Handle events, check timers, update sprites and particles, and re-render the screen."
         self.clock.tick(40)
         loop_time = self.clock.get_time()
 
@@ -44,7 +51,7 @@ class Game(object):
         for event in new_events:
             if self.handlers.get(event.type):
                 for handler in self.handlers[event.type]:
-                    handler.check(event)
+                    handler.respond(event)
 
         self.player.update()
         self.all_sprites.update()
@@ -58,6 +65,7 @@ class Game(object):
         pygame.display.flip()
 
     def init_controls(self):
+        "Internal. Initialize the game controls."
         controls = []
         handlers = dict()
 
@@ -88,11 +96,22 @@ class Game(object):
         self.handlers = handlers
 
     def quit(self):
+        "Exit the game politely."
         print "Goodbye!"
         sys.exit(0)
 
 
 class Control(object):
+    """
+    A piece of the game/player interface. Arguments:
+        events      (list of pygame.event.Events to respond to)
+        keys        (list of key constants to respond to)
+        act         (function to call when invoked)
+        *act_args   (arguments to function)
+
+    To make something happen while a key is being held down, make one control which starts the action on KEYDOWN and another which ends it on KEYUP.
+    """
+
     def __init__(self, events, keys, act, *act_args):
         super(Control, self).__init__()
         self.events = events
@@ -100,6 +119,7 @@ class Control(object):
         self.act = act
         self.act_args = act_args
 
-    def check(self, event):
+    def respond(self, event):
+        "Respond to one of our events, checking key if needed."
         if event.type not in (KEYDOWN, KEYUP) or event.key in self.keys:
             self.act(*self.act_args)
