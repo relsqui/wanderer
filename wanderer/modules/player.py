@@ -40,7 +40,7 @@ class Player(object):
         else:
             vector = (self.speed, 0)
         newpos = self.sprite.rect.move(vector)
-        if newpos.left > self.area.left and newpos.right < self.area.right and newpos.top > self.area.top and newpos.bottom < self.area.bottom:
+        if self.area.contains(newpos):
             self.sprite.rect = newpos
         else:
             self.interject(random.choice(OUCHES))
