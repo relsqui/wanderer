@@ -33,7 +33,7 @@ class Game(object):
         sprite_sheet = pygame.image.load(os.path.join("images", "lady_sprites.png")).convert()
         char_cursor = pygame.Rect(CHAR_WIDTH, 0, CHAR_WIDTH, CHAR_HEIGHT)
         char_sheet = sprite_sheet.subsurface(char_cursor)
-        self.player = player.Player(sprites.Character(self.screen, char_sheet, self.font, self.all_particles))
+        self.player = player.Player(sprites.Character(char_sheet, self.font, self.all_particles), self.screen)
         self.all_sprites = pygame.sprite.RenderPlain((self.player.sprite,))
         print " * sprites"
 
@@ -77,11 +77,11 @@ class Game(object):
         controls.append(Control([KEYDOWN], [K_SPACE], self.player.greet))
 
         # Movement
-        controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.sprite.move, LEFT))
-        controls.append(Control([KEYDOWN], RIGHT_KEYS, self.player.sprite.move, RIGHT))
-        controls.append(Control([KEYDOWN], UP_KEYS, self.player.sprite.move, UP))
-        controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.sprite.move, DOWN))
-        controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.sprite.stop_animation))
+        controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.move, LEFT))
+        controls.append(Control([KEYDOWN], RIGHT_KEYS, self.player.move, RIGHT))
+        controls.append(Control([KEYDOWN], UP_KEYS, self.player.move, UP))
+        controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.move, DOWN))
+        controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.sprite.stand))
 
         for control in controls:
             for event in control.events:

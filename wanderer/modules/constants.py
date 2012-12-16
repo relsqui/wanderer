@@ -19,7 +19,7 @@ SPRITE_HEIGHT = 34  # pixels
 CHAR_WIDTH = 96     # pixels
 CHAR_HEIGHT = 136   # pixels
 WALK_RATE = 250     # milliseconds between animation frames
-SPRITE_SPEED = 3    # pixels per tick
+PLAYER_SPEED = 3    # pixels per tick
 
 # Controls
 KEY_DELAY = 50

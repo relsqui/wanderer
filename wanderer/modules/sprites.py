@@ -5,29 +5,21 @@ from modules.constants import *
 class Character(pygame.sprite.Sprite):
     """
     Animated character sprite. Arguments:
-        screen          (pygame.Surface inside which the character can move)
         sheet           (pygame.Surface containing a sprite sheet)
         font            (pygame.font.Font for use in speaking)
         all_particles   (list of all particles, for appending speech to)
 
     The sprite sheet will be chopped up and animated according to various layouts specs in the constants module.
     """
-    def __init__(self, screen, sheet, font, all_particles):
+    def __init__(self, sheet, font, all_particles):
         super(Character, self).__init__()
         self.sheet = sheet
         self.animations = []
         self.init_images()
-        self.animation = self.animations[DOWN]
         self.direction = DOWN
+        self.animation = self.animations[self.direction]
         self.update()
-
-        self.velocity = (0,0)
-        self.speed = SPRITE_SPEED
-
-        self.screen = screen
-        self.area = screen.get_rect()
         self.rect = self.image.get_rect()
-        self.rect.center = self.area.center
 
         self.font = font
         self.all_particles = all_particles
@@ -47,28 +39,19 @@ class Character(pygame.sprite.Sprite):
         "Update the sprite image."
         self.image = self.animation.image()
 
-    def move(self, direction):
-        "Try to move in a direction."
+    def turn(self, direction):
         self.direction = direction
         self.animation = self.animations[direction]
-        self.animation.start()
-        if direction is UP:
-            vector = (0, -self.speed)
-        elif direction is DOWN:
-            vector = (0, self.speed)
-        elif direction is LEFT:
-            vector = (-self.speed, 0)
-        else:
-            vector = (self.speed, 0)
-        newpos = self.rect.move(vector)
-        if newpos.left > self.area.left and newpos.right < self.area.right and newpos.top > self.area.top and newpos.bottom < self.area.bottom:
-            self.rect = newpos
-        else:
-            self.interject(random.choice(OUCHES))
-    
-    def stop_animation(self):
-        "Internal. Stops whichever animation is currently running."
+
+    def stand(self, direction = None):
+        if direction is not None:
+            self.turn(direction)
         self.animation.stop()
+
+    def walk(self, direction = None):
+        if direction is not None:
+            self.turn(direction)
+        self.animation.start()
 
     def reset_interject(self):
         "Internal. Reset interjection timer."
