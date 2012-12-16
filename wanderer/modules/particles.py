@@ -16,21 +16,24 @@ class Particle(pygame.sprite.Sprite):
         fade (integer)
     """
 
-    def __init__(self, surface, location, timeout = PARTICLE_DEFAULT_TIMEOUT, fade = False):
+    def __init__(self, surface, location, timeout = PARTICLE_DEFAULT_TIMEOUT, vector = (0,0), fade = False):
         super(Particle, self).__init__()
         self.surface = surface
         self.rect = surface.get_rect()
         self.rect.center = location.center
         self.surface.set_alpha(255)
+        self.vector = vector
         if fade:
             fade_time = timeout/FADE_STEPS
             for i in xrange(FADE_STEPS - 1):
                 timers.Timer((i+1) * fade_time, self.fade)
         timers.Timer(timeout, self.kill)
 
-        
     def fade(self):
         self.surface.set_alpha(self.surface.get_alpha() - FADE_AMOUNT)
+
+    def update(self):
+        self.rect.move_ip(self.vector)
 
 
 class TextParticle(Particle):
@@ -42,8 +45,8 @@ class TextParticle(Particle):
         fade (boolean)
     """
 
-    def __init__(self, font, message, location, timeout = None, fade = True):
+    def __init__(self, font, message, location, timeout = None, vector = (0, -2), fade = True):
         text = font.render(message, False, FONT_COLOR)
         if timeout is None:
             timeout = len(message) * TEXT_TIMEOUT_PER_CHAR
-        super(TextParticle, self).__init__(text, location, timeout, fade)
+        super(TextParticle, self).__init__(text, location, timeout, vector, fade)

@@ -11,8 +11,8 @@ SPRITE_WIDTH = 32   # pixels
 SPRITE_HEIGHT = 34  # pixels
 CHAR_WIDTH = 96     # pixels
 CHAR_HEIGHT = 136   # pixels
-WALK_RATE = 250     # milliseconds between frames
-SPRITE_SPEED = 2    # pixels per tick
+WALK_RATE = 250     # milliseconds between animation frames
+SPRITE_SPEED = 3    # pixels per tick
 
 # Controls
 LEFT_KEYS = (K_h, K_LEFT)
@@ -22,11 +22,11 @@ DOWN_KEYS = (K_j, K_DOWN)
 CONTROLS = (LEFT_KEYS, RIGHT_KEYS, UP_KEYS, DOWN_KEYS)
 DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 
-# Timeouts
+# Timers
 PARTICLE_DEFAULT_TIMEOUT = 500  # milliseconds
-TEXT_TIMEOUT_PER_CHAR = 150     # milliseconds
+TEXT_TIMEOUT_PER_CHAR = 80      # milliseconds
 INTERJECT_TIMEOUT = 500         # milliseconds
-FADE_STEPS = 10
+FADE_STEPS = 5
 FADE_AMOUNT = 255/FADE_STEPS
 
 # Text

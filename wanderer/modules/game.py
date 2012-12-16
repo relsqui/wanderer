@@ -37,7 +37,7 @@ class Game(object):
 
 
     def loop(self):
-        self.clock.tick(60)
+        self.clock.tick(40)
         loop_time = self.clock.get_time()
 
         new_events = pygame.event.get()
@@ -48,6 +48,7 @@ class Game(object):
 
         self.player.update()
         self.all_sprites.update()
+        self.all_particles.update()
         for timer in timers.all_timers:
             timer.update(loop_time)
 
