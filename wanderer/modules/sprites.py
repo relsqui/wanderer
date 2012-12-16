@@ -6,11 +6,13 @@ class Character(pygame.sprite.Sprite):
     """
     Animated character sprite. Arguments:
         sheet           (pygame.Surface containing a sprite sheet)
+        location        ((x, y) tuple where the sprite will be centered)
 
     The sprite sheet will be chopped up and animated according to various layouts specs in the constants module.
     """
-    def __init__(self, sheet):
+    def __init__(self, sheet, location):
         super(Character, self).__init__()
+        print "Initializing sprite at ", location
         self.sheet = sheet
         self.animations = []
         self.init_images()
@@ -18,6 +20,7 @@ class Character(pygame.sprite.Sprite):
         self.animation = self.animations[self.direction]
         self.update()
         self.rect = self.image.get_rect()
+        self.rect.center = location
 
     def init_images(self):
         "Internal. Initialize animation frames from sprite sheet."

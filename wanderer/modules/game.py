@@ -47,6 +47,11 @@ class Game(object):
 
         new_events = pygame.event.get()
         for event in new_events:
+            print "Heard a", pygame.event.event_name(event.type),
+            if event.type in (KEYDOWN, KEYUP):
+                print "({})".format(pygame.key.name(event.key))
+            else:
+                print
             if self.handlers.get(event.type):
                 for handler in self.handlers[event.type]:
                     handler.respond(event)
@@ -79,6 +84,16 @@ class Game(object):
         controls.append(Control([KEYDOWN], UP_KEYS, self.player.move, UP))
         controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.move, DOWN))
         controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.sprite.stand))
+
+        # Appearance
+        controls.append(Control([KEYDOWN], [K_1], self.player.set_sprite, 1))
+        controls.append(Control([KEYDOWN], [K_2], self.player.set_sprite, 2))
+        controls.append(Control([KEYDOWN], [K_3], self.player.set_sprite, 3))
+        controls.append(Control([KEYDOWN], [K_4], self.player.set_sprite, 4))
+        controls.append(Control([KEYDOWN], [K_5], self.player.set_sprite, 5))
+        controls.append(Control([KEYDOWN], [K_6], self.player.set_sprite, 6))
+        controls.append(Control([KEYDOWN], [K_7], self.player.set_sprite, 7))
+        controls.append(Control([KEYDOWN], [K_8], self.player.set_sprite, 8))
 
         for control in controls:
             for event in control.events:

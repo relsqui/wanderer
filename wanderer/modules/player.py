@@ -14,8 +14,9 @@ class Player(object):
     def __init__(self, screen, font, all_particles):
         super(Player, self).__init__()
         self.area = screen.get_rect()
-        self.set_sprite()
-        self.sprite.rect.center = self.area.center
+        self.rect = self.area   # so the sprite will be centered
+        self.set_sprite(2)
+        self.rect = self.sprite.rect
 
         self.speed = PLAYER_SPEED
 
@@ -24,7 +25,7 @@ class Player(object):
         self.interject_ok = True
         self.all_particles = all_particles
 
-    def set_sprite(self, spriteno = 2):
+    def set_sprite(self, spriteno):
         spriteno -= 1
         row = spriteno % SHEET_COLUMNS
         column = spriteno / SHEET_COLUMNS
@@ -33,7 +34,8 @@ class Player(object):
         char_cursor = pygame.Rect(charx, chary, CHAR_WIDTH, CHAR_HEIGHT)
         sprite_sheet = pygame.image.load(LADY_SPRITES).convert()
         char_sheet = sprite_sheet.subsurface(char_cursor)
-        self.sprite = sprites.Character(char_sheet)
+        location = self.rect.center
+        self.sprite = sprites.Character(char_sheet, location)
 
     def update(self):
         "Placeholder for when there's more to update."

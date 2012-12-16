@@ -9,7 +9,7 @@ Various constants for use in other modules.
 DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 
 # Window
-WINDOW_SIZE = (500,400)
+WINDOW_SIZE = (300,250)
 WINDOW_TITLE = "Wanderer"
 BACKGROUND_COLOR = (50, 200, 70)
 
