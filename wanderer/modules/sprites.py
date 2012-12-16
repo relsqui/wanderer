@@ -6,12 +6,10 @@ class Character(pygame.sprite.Sprite):
     """
     Animated character sprite. Arguments:
         sheet           (pygame.Surface containing a sprite sheet)
-        font            (pygame.font.Font for use in speaking)
-        all_particles   (list of all particles, for appending speech to)
 
     The sprite sheet will be chopped up and animated according to various layouts specs in the constants module.
     """
-    def __init__(self, sheet, font, all_particles):
+    def __init__(self, sheet):
         super(Character, self).__init__()
         self.sheet = sheet
         self.animations = []
@@ -20,10 +18,6 @@ class Character(pygame.sprite.Sprite):
         self.animation = self.animations[self.direction]
         self.update()
         self.rect = self.image.get_rect()
-
-        self.font = font
-        self.all_particles = all_particles
-        self.interject_ok = True
 
     def init_images(self):
         "Internal. Initialize animation frames from sprite sheet."
@@ -40,35 +34,21 @@ class Character(pygame.sprite.Sprite):
         self.image = self.animation.image()
 
     def turn(self, direction):
+        "Changes the orientation of the sprite."
         self.direction = direction
         self.animation = self.animations[direction]
 
     def stand(self, direction = None):
+        "Stops walking animation, optionally facing the given direction."
         if direction is not None:
             self.turn(direction)
         self.animation.stop()
 
     def walk(self, direction = None):
+        "Starts walking animation, optionally facing the given direction."
         if direction is not None:
             self.turn(direction)
         self.animation.start()
-
-    def reset_interject(self):
-        "Internal. Reset interjection timer."
-        self.interject_ok = True
-
-    def say(self, message):
-        "Emit a message as a floating particle."
-        offset = -1 * (self.rect.height/2 + FONT_SIZE/2 + 2)
-        destination = self.rect.move(0, offset)
-        self.all_particles.add(particles.TextParticle(self.font, message, destination))
-
-    def interject(self, message):
-        "Low-priority say(); discard if too frequent."
-        if self.interject_ok:
-            self.say(message)
-            self.interject_ok = False
-            timers.Timer(INTERJECT_TIMEOUT, self.reset_interject)
 
 
 class Animation(object):
