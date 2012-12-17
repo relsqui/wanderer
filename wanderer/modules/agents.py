@@ -93,9 +93,9 @@ class Agent(object):
             return collided_sprites
         return False
 
-    def move(self, direction):
+    def move(self, direction, turn = True):
         "Try to move in a direction."
-        self.sprite.walk(direction)
+        self.sprite.walk(direction, turn)
         if direction is UP:
             vector = (0, -self.speed)
         elif direction is DOWN:
