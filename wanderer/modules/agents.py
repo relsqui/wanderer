@@ -21,15 +21,14 @@ class Agent(object):
         self.name = name
         self.speed = PLAYER_SPEED
 
+        self.font = font
+        self.last_greetings = [None for x in xrange(5)]
+        self.interject_ok = True
+
         self.area = screen.get_rect()
         if not sprite:
             sprite = random.randrange(1, 8)
         self.set_sprite(sprite, location)
-        self.rect = self.sprite.rect
-
-        self.font = font
-        self.last_greetings = [None for x in xrange(5)]
-        self.interject_ok = True
 
     def __repr__(self):
         return self.name
@@ -48,19 +47,39 @@ class Agent(object):
                 location = self.sprite.rect
             self.sprite.kill()
         elif not location:
-            locx = random.randrange(1, self.area.width - 1)
-            locy = random.randrange(1, self.area.height - 1)
-            location = pygame.Rect(locx, locy, SPRITE_WIDTH, SPRITE_HEIGHT)
-        self.sprite = sprites.Character(char_sheet, location, self)
+            while True:
+                locx = random.randrange(0, self.area.width - SPRITE_WIDTH)
+                locy = random.randrange(0, self.area.height - SPRITE_HEIGHT)
+                location = pygame.Rect(locx, locy, SPRITE_WIDTH, SPRITE_HEIGHT)
+                self.sprite = sprites.Character(char_sheet, location, self)
+                if not self.colliding():
+                    break
+                else:
+                    self.sprite.kill()
         self.all_sprites.add(self.sprite)
 
     def update(self):
         "Placeholder for when there's more to update."
         pass
 
-    def check_collisions(self):
-        if self.area.contains(self.rect):
-            return True
+    def colliding(self):
+        if not self.area.contains(self.sprite.rect):
+            self.interject(random.choice(OUCHES))
+            return self.area
+
+        all_other_sprites = self.all_sprites.sprites()
+        if self.sprite in all_other_sprites:
+            # It might not be, if we're just testing a potential position
+            all_other_sprites.remove(self.sprite)
+        collision_test = pygame.sprite.collide_mask
+        collided_sprites = [s for s in all_other_sprites if collision_test(self.sprite, s)]
+        # This is what pygame.sprite.spritecollide is for, but it wasn't working for some reason.
+        if collided_sprites:
+            for sprite in collided_sprites:
+                sprite.agent.interject(random.choice(GREETINGS))
+            return collided_sprites
+
+        return False
 
     def move(self, direction):
         "Try to move in a direction."
@@ -75,7 +94,7 @@ class Agent(object):
             vector = (self.speed, 0)
         oldpos = self.sprite.rect.copy()
         self.sprite.rect.move_ip(vector)
-        if not self.check_collisions():
+        if self.colliding():
             self.sprite.rect = oldpos
 
     def stop(self):
@@ -110,20 +129,11 @@ class Agent(object):
 
 
 class Player(Agent):
-    def check_collisions(self):
-        "Returns True if sprite is free of collisions, False otherwise. May also do other things."
-        if not self.area.contains(self.sprite.rect):
+    def colliding(self):
+        colliding = super(Player, self).colliding()
+        if colliding is self.area:
             self.interject(random.choice(OUCHES))
-            return False
-
-        all_other_sprites = self.all_sprites.sprites()
-        all_other_sprites.remove(self.sprite)
-        collision_test = pygame.sprite.collide_mask
-        collided_sprites = [s for s in all_other_sprites if collision_test(self.sprite, s)]
-        # Couldn't get pygame.sprite.spritecollide to work for some reason.
-        if collided_sprites:
-            for sprite in collided_sprites:
+        elif colliding:
+            for sprite in colliding:
                 sprite.agent.interject(random.choice(GREETINGS))
-            return False
-
-        return True
+        return colliding
