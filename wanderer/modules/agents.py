@@ -52,6 +52,10 @@ class Agent(object):
         "Placeholder for when there's more to update."
         pass
 
+    def check_collisions(self, position):
+        if self.area.contains(position):
+            return True
+
     def move(self, direction):
         "Try to move in a direction."
         self.sprite.walk(direction)
@@ -64,10 +68,8 @@ class Agent(object):
         else:
             vector = (self.speed, 0)
         newpos = self.sprite.rect.move(vector)
-        if self.area.contains(newpos):
+        if self.check_collisions(newpos):
             self.sprite.rect = newpos
-        else:
-            self.interject(random.choice(OUCHES))
 
     def stop(self):
         self.sprite.stand()
@@ -98,3 +100,11 @@ class Agent(object):
                 self.last_greetings.append(greeting)
                 break
         self.interject(greeting)
+
+
+class Player(Agent):
+    def check_collisions(self, position):
+        if self.area.contains(position):
+            return True
+        else:
+            self.interject(random.choice(OUCHES))

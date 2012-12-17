@@ -31,7 +31,7 @@ class Game(object):
         # Sprites and agents
         self.all_particles = particles.ParticleGroup()
         self.all_sprites = pygame.sprite.RenderPlain()
-        self.player = agents.Agent(self.screen, self.font, self.all_particles, self.all_sprites, 2)
+        self.player = agents.Player(self.screen, self.font, self.all_particles, self.all_sprites, 2)
         buddyx = random.randrange(0, WINDOW_WIDTH - SPRITE_WIDTH)
         buddyy = random.randrange(0, WINDOW_HEIGHT - SPRITE_HEIGHT)
         buddy_location = pygame.Rect(buddyx, buddyy, SPRITE_HEIGHT, SPRITE_WIDTH)
