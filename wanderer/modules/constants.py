@@ -7,6 +7,8 @@ Various constants for use in other modules.
 
 # General
 DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
+DIRECTIONS = [DOWN, LEFT, RIGHT, UP]
+OPPOSITE = [UP, RIGHT, LEFT, DOWN]
 
 # Window
 WINDOW_HEIGHT = 250 # pixels
@@ -24,6 +26,9 @@ SHEET_ROWS = 2
 SHEET_COLUMNS = 4
 WALK_RATE = 250     # milliseconds between animation frames
 PLAYER_SPEED = 3    # pixels per tick
+NPC_SPEED = 1       # pixels per tick
+MIN_WANDER = 2000   # milliseconds (for NPC to pause or walk)
+MAX_WANDER = 4000   # milliseconds (for NPC to pause or walk)
 LADY_SPRITES = os.path.join("images", "lady_sprites.png")
 
 # Controls

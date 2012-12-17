@@ -21,4 +21,7 @@ class Timer(object):
             self.action(*self.arguments)
             all_timers.remove(self)
 
+    def cancel(self):
+        all_timers.remove(self)
+
 all_timers = []

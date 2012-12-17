@@ -83,8 +83,6 @@ class Agent(object):
         collided_sprites = [s for s in all_other_sprites if collision_test(self.sprite, s)]
         # This is what pygame.sprite.spritecollide is for, but it wasn't working for some reason.
         if collided_sprites:
-            for sprite in collided_sprites:
-                sprite.agent.interject(random.choice(GREETINGS))
             return collided_sprites
         return False
 
@@ -103,8 +101,10 @@ class Agent(object):
         self.sprite.rect.move_ip(vector)
         if self.colliding():
             self.sprite.rect = oldpos
+            return False
+        return True
 
-    def stop(self):
+    def stop(self, direction = None):
         self.sprite.stand()
 
     def say(self, message):
@@ -148,3 +148,27 @@ class Player(Agent):
             for sprite in sprites:
                 sprite.agent.interject(random.choice(GREETINGS))
         return sprites
+
+
+class Npc(Agent):
+    def __init__(self, *args):
+        super(Npc, self).__init__(*args)
+        self.speed = NPC_SPEED
+        self.wandering = False
+        self.direction = DOWN
+        timers.Timer(1000, self.start_wandering)
+
+    def update(self):
+        if self.wandering:
+            if not self.move(self.direction):
+                self.direction = OPPOSITE[self.direction]
+
+    def start_wandering(self):
+        self.wandering = True
+        self.direction = random.choice(DIRECTIONS)
+        timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.stop_wandering)
+
+    def stop_wandering(self):
+        self.wandering = False
+        self.stop()
+        timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.start_wandering)
