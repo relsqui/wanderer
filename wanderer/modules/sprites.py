@@ -5,19 +5,21 @@ from modules.constants import *
 class Character(pygame.sprite.Sprite):
     """
     Animated character sprite. Arguments:
+        agent           (agents.Agent this sprite belongs to)
         sheet           (pygame.Surface containing a sprite sheet)
         location        (pygame.Rect where the sprite should be)
+        direction       (optional: which way the sprite should start facing)
 
     The sprite sheet will be chopped up and animated according to various layouts specs in the constants module.
     """
-    def __init__(self, sheet, location, agent = None):
+    def __init__(self, agent, sheet, location, direction = DOWN):
         super(Character, self).__init__()
         self.agent = agent
         self.sheet = sheet
         self.animations = []
         self.init_images()
         self.rect = location
-        self.direction = DOWN
+        self.direction = direction
         self.animation = self.animations[self.direction]
         self.update()
 

@@ -50,12 +50,12 @@ class Game(object):
         new_events = pygame.event.get()
         for event in new_events:
             """
-            print "Heard a", pygame.event.event_name(event.type),
+            print "Heard", pygame.event.event_name(event.type),
             if event.type in (KEYDOWN, KEYUP):
                 print "({})".format(pygame.key.name(event.key))
             else:
                 print
-            """
+            # """
             if self.handlers.get(event.type):
                 for handler in self.handlers[event.type]:
                     handler.respond(event)

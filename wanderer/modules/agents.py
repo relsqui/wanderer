@@ -45,13 +45,15 @@ class Agent(object):
         if hasattr(self, "sprite"):
             if not location:
                 location = self.sprite.rect
+            direction = self.sprite.direction
             self.sprite.kill()
+            self.sprite = sprites.Character(self, char_sheet, location, direction)
         elif not location:
             while True:
                 locx = random.randrange(0, self.area.width - SPRITE_WIDTH)
                 locy = random.randrange(0, self.area.height - SPRITE_HEIGHT)
                 location = pygame.Rect(locx, locy, SPRITE_WIDTH, SPRITE_HEIGHT)
-                self.sprite = sprites.Character(char_sheet, location, self)
+                self.sprite = sprites.Character(self, char_sheet, location)
                 if not self.colliding():
                     break
                 else:
