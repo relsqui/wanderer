@@ -63,10 +63,18 @@ class Agent(object):
         pass
 
     def colliding(self):
-        if not self.area.contains(self.sprite.rect):
-            self.interject(random.choice(OUCHES))
-            return self.area
+        if self.colliding_wall():
+            return True
+        if self.colliding_sprites():
+            return True
+        return False
 
+    def colliding_wall(self):
+        if self.area.contains(self.sprite.rect):
+            return False
+        return True
+
+    def colliding_sprites(self):
         all_other_sprites = self.all_sprites.sprites()
         if self.sprite in all_other_sprites:
             # It might not be, if we're just testing a potential position
@@ -78,7 +86,6 @@ class Agent(object):
             for sprite in collided_sprites:
                 sprite.agent.interject(random.choice(GREETINGS))
             return collided_sprites
-
         return False
 
     def move(self, direction):
@@ -129,11 +136,15 @@ class Agent(object):
 
 
 class Player(Agent):
-    def colliding(self):
-        colliding = super(Player, self).colliding()
-        if colliding is self.area:
+    def colliding_wall(self):
+        if super(Player, self).colliding_wall():
             self.interject(random.choice(OUCHES))
-        elif colliding:
-            for sprite in colliding:
+            return True
+        return False
+
+    def colliding_sprites(self):
+        sprites = super(Player, self).colliding_sprites()
+        if sprites:
+            for sprite in sprites:
                 sprite.agent.interject(random.choice(GREETINGS))
-        return colliding
+        return sprites
