@@ -1,6 +1,6 @@
 import pygame, sys
 from modules.constants import *
-from modules import player, sprites, particles, timers
+from modules import agents, sprites, particles, timers
 
 class Game(object):
     """
@@ -31,7 +31,8 @@ class Game(object):
         # Sprites and player
         self.all_particles = particles.ParticleGroup()
         self.all_sprites = pygame.sprite.RenderPlain()
-        self.player = player.Player(self.screen, self.font, self.all_particles, self.all_sprites)
+        self.player = agents.Agent(self.screen, self.font, self.all_particles, self.all_sprites)
+        self.all_agents = [self.player]
         print " * sprites"
 
         # Miscellany
@@ -58,7 +59,8 @@ class Game(object):
                 for handler in self.handlers[event.type]:
                     handler.respond(event)
 
-        self.player.update()
+        for agent in self.all_agents:
+            agent.update()
         self.all_sprites.update()
         self.all_particles.update()
         for timer in timers.all_timers:

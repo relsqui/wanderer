@@ -2,18 +2,18 @@ import random, pygame
 from modules.constants import *
 from modules import particles, timers, sprites
 
-class Player(object):
+class Agent(object):
     """
-    Data relating to the game player. Arguments:
+    Data relating to an agent (PC/NPC). Arguments:
         sprite          (sprites.Character)
-        screen          (pygame.Surface inside which the player can move)
+        screen          (pygame.Surface inside which the agent can move)
         font            (pygame.font.Font for use in speaking)
         all_particles   (list of all particles)
         all_sprites     (list of all sprites)
     """
 
     def __init__(self, screen, font, all_particles, all_sprites):
-        super(Player, self).__init__()
+        super(Agent, self).__init__()
         self.all_particles = all_particles
         self.all_sprites = all_sprites
 
