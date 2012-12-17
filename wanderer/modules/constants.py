@@ -34,10 +34,10 @@ LADY_SPRITES = os.path.join("images", "lady_sprites.png")
 # Controls
 KEY_DELAY = 50
 KEY_INTERVAL = 10
-LEFT_KEYS = (K_h, K_LEFT)
-RIGHT_KEYS = (K_l, K_RIGHT)
-UP_KEYS = (K_k, K_UP)
-DOWN_KEYS = (K_j, K_DOWN)
+LEFT_KEYS = (K_h, K_LEFT, K_a)
+RIGHT_KEYS = (K_l, K_RIGHT, K_d)
+UP_KEYS = (K_k, K_UP, K_w)
+DOWN_KEYS = (K_j, K_DOWN, K_s)
 CONTROLS = (LEFT_KEYS, RIGHT_KEYS, UP_KEYS, DOWN_KEYS)
 
 # Timers
