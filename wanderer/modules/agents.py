@@ -48,8 +48,9 @@ class Agent(object):
                 location = self.sprite.rect
             self.sprite.kill()
         elif not location:
-            location = pygame.Rect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT)
-            location.center = self.area.center
+            locx = random.randrange(1, self.area.width - 1)
+            locy = random.randrange(1, self.area.height - 1)
+            location = pygame.Rect(locx, locy, SPRITE_WIDTH, SPRITE_HEIGHT)
         self.sprite = sprites.Character(char_sheet, location, self)
         self.all_sprites.add(self.sprite)
 
