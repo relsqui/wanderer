@@ -93,7 +93,7 @@ class Agent(object):
             return collided_sprites
         return False
 
-    def move(self, direction, turn = True):
+    def walk(self, direction, turn = True):
         "Try to move in a direction."
         self.sprite.walk(direction, turn)
         if direction is UP:
@@ -111,7 +111,7 @@ class Agent(object):
             return False
         return True
 
-    def stop(self, direction = None):
+    def stand(self, direction = None):
         self.sprite.stand()
 
     def say(self, message):
@@ -153,7 +153,9 @@ class Player(Agent):
         sprites = super(Player, self).colliding_sprites()
         if sprites:
             for sprite in sprites:
-                sprite.agent.interject(random.choice(GREETINGS))
+                if isinstance(sprite.agent, Npc) and sprite.agent.is_startleable:
+                    timers.Timer(100, sprite.agent.startle)
+                    # this gives us time to finish the loop and uncollide
         return sprites
 
 
@@ -165,18 +167,33 @@ class Npc(Agent):
             self.set_sprite()
         self.speed = NPC_SPEED
         self.direction = None
-        timers.Timer(1000, self.start_wandering)
+        self.is_startleable = True
+        self.timer = timers.Timer(1000, self.start_wandering)
 
     def update(self):
         if self.direction is not None:
-            if not self.move(self.direction):
+            if not self.walk(self.direction):
                 self.direction = OPPOSITE[self.direction]
 
     def start_wandering(self):
         self.direction = random.choice(DIRECTIONS)
-        timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.stop_wandering)
+        self.timer = timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.stop_wandering)
 
     def stop_wandering(self):
+        self.stand()
         self.direction = None
-        self.stop()
-        timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.start_wandering)
+        self.timer = timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.start_wandering)
+
+    def startle(self):
+        self.is_startleable = False
+        self.direction = None
+        self.walk(OPPOSITE[self.sprite.direction], False)
+        # self.sprite.direction, not self.direction, in case ours was None
+        self.timer.cancel()
+        self.timer = timers.Timer(1500, self.start_wandering)
+        timers.Timer(600, self.startle_finish)
+
+    def startle_finish(self):
+        self.stand()
+        self.interject(random.choice((GREETINGS)))
+        self.is_startleable = True

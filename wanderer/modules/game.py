@@ -84,11 +84,11 @@ class Game(object):
         controls.append(Control([KEYDOWN], [K_SPACE], self.player.greet))
 
         # Movement
-        controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.move, LEFT))
-        controls.append(Control([KEYDOWN], RIGHT_KEYS, self.player.move, RIGHT))
-        controls.append(Control([KEYDOWN], UP_KEYS, self.player.move, UP))
-        controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.move, DOWN))
-        controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.stop))
+        controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.walk, LEFT))
+        controls.append(Control([KEYDOWN], RIGHT_KEYS, self.player.walk, RIGHT))
+        controls.append(Control([KEYDOWN], UP_KEYS, self.player.walk, UP))
+        controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.walk, DOWN))
+        controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.stand))
 
         # Appearance
         controls.append(Control([KEYDOWN], [K_1], self.player.set_sprite, 1))
