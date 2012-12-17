@@ -83,7 +83,7 @@ class Game(object):
         # Quit
         controls.append(Control([QUIT, KEYDOWN], [K_q], self.quit))
 
-        # Talking
+        # Speech
         controls.append(Control([KEYDOWN], [K_SPACE], self.player.greet))
         controls.append(Control([KEYDOWN], [K_c], self.player.call))
 

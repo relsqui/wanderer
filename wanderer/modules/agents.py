@@ -179,6 +179,13 @@ class Player(Agent):
                     # this gives us time to finish the loop and uncollide
         return sprites
 
+    def greet(self):
+        super(Player, self).greet()
+        audible = pygame.sprite.collide_circle_ratio(2)
+        earshot = [npc for npc in self.game.all_npcs if audible(self.sprite, npc.sprite)]
+        for npc in earshot:
+            timers.Timer(random.randint(0, 500), npc.greet)
+
     def call(self):
         self.interject(random.choice(CALLS))
         for npc in self.game.all_npcs:
