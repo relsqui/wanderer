@@ -112,7 +112,6 @@ class Player(Agent):
     def check_collisions(self):
         "Returns True if sprite is free of collisions, False otherwise. May also do other things."
         if not self.area.contains(self.sprite.rect):
-            print self, "collided with a wall"
             self.interject(random.choice(OUCHES))
             return False
 
