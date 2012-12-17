@@ -31,8 +31,8 @@ class Game(object):
         # Sprites and agents
         self.all_particles = particles.ParticleGroup()
         self.all_sprites = pygame.sprite.RenderPlain()
-        self.player = agents.Player(self.screen, self.font, self.all_particles, self.all_sprites, 2, None, "Player")
-        self.buddy = agents.Npc(self.screen, self.font, self.all_particles, self.all_sprites, None, None, "Buddy")
+        self.player = agents.Player(self, "Player")
+        self.buddy = agents.Npc(self, "Buddy")
         self.all_agents = [self.player, self.buddy]
         print " * sprites & agents"
 

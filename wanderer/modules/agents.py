@@ -5,30 +5,25 @@ from modules import particles, timers, sprites
 class Agent(object):
     """
     Data relating to an agent (PC/NPC). Arguments:
-        screen          (pygame.Surface inside which the agent can move)
-        font            (pygame.font.Font for use in speaking)
-        all_particles   (list of all particles)
-        all_sprites     (list of all sprites)
+        game            (game.Game object)
+        name            (optional: string to call this agent)
         sprite          (optional: which # sprite to use, defaults to random)
         location        (optional: (x, y) location to center sprite on)
-        name            (optional: string to call this agent)
     """
 
-    def __init__(self, screen, font, all_particles, all_sprites, sprite = None, location = None, name = "Anonymous Agent"):
+    def __init__(self, game, name = "Anonymous Agent", spriteno = None, location = None):
         super(Agent, self).__init__()
-        self.all_particles = all_particles
-        self.all_sprites = all_sprites
+        self.game = game
         self.name = name
         self.speed = PLAYER_SPEED
 
-        self.font = font
         self.last_greetings = [None for x in xrange(5)]
         self.interject_ok = True
 
-        self.area = screen.get_rect()
-        if not sprite:
-            sprite = random.randrange(1, 8)
-        self.set_sprite(sprite, location)
+        self.area = game.screen.get_rect()
+        if not spriteno:
+            spriteno = random.randrange(1, 8)
+        self.set_sprite(spriteno, location)
 
     def __repr__(self):
         return self.name
@@ -58,7 +53,7 @@ class Agent(object):
                     break
                 else:
                     self.sprite.kill()
-        self.all_sprites.add(self.sprite)
+        self.game.all_sprites.add(self.sprite)
 
     def update(self):
         "Placeholder for when there's more to update."
@@ -77,7 +72,7 @@ class Agent(object):
         return True
 
     def colliding_sprites(self):
-        all_other_sprites = self.all_sprites.sprites()
+        all_other_sprites = self.game.all_sprites.sprites()
         if self.sprite in all_other_sprites:
             # It might not be, if we're just testing a potential position
             all_other_sprites.remove(self.sprite)
@@ -113,7 +108,7 @@ class Agent(object):
         "Emit a message as a floating particle."
         offset = -1 * (self.sprite.rect.height/2 + FONT_SIZE/2 + 2)
         destination = self.sprite.rect.move(0, offset)
-        self.all_particles.add(particles.TextParticle(self.font, message, destination))
+        self.game.all_particles.add(particles.TextParticle(self.game.font, message, destination))
 
     def interject(self, message):
         "Low-priority say(); discard if too frequent."
