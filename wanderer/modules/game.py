@@ -34,6 +34,7 @@ class Game(object):
         self.player = agents.Player(self, "Player")
         self.buddy = agents.Npc(self, "Buddy")
         self.all_agents = [self.player, self.buddy]
+        self.all_npcs = [self.buddy]
         print " * sprites & agents"
 
         # Miscellany
@@ -80,8 +81,9 @@ class Game(object):
         # Quit
         controls.append(Control([QUIT, KEYDOWN], [K_q], self.quit))
 
-        # Random greeting
+        # Talking
         controls.append(Control([KEYDOWN], [K_SPACE], self.player.greet))
+        controls.append(Control([KEYDOWN], [K_c], self.player.call))
 
         # Movement
         controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.walk, LEFT))

@@ -127,6 +127,9 @@ class Agent(object):
     def stand(self, direction = None):
         self.sprite.stand()
 
+    def turn(self, direction):
+        self.sprite.turn(direction)
+
     def say(self, message):
         "Emit a message as a floating particle."
         offset = -1 * (self.sprite.rect.height/2 + FONT_SIZE/2 + 2)
@@ -171,6 +174,11 @@ class Player(Agent):
                     # this gives us time to finish the loop and uncollide
         return sprites
 
+    def call(self):
+        self.interject(random.choice(CALLS))
+        for npc in self.game.all_npcs:
+            npc.pause()
+            npc.turn(npc.towards(self.sprite.rect))
 
 class Npc(Agent):
     def __init__(self, *args):
@@ -199,16 +207,19 @@ class Npc(Agent):
 
     def startle(self, startler):
         self.is_startleable = False
-        self.direction = None
+        self.pause()
         facing = self.towards(startler.sprite.rect)
-        self.sprite.turn(facing)
+        self.turn(facing)
         self.walk(OPPOSITE[facing], False)
-        # self.sprite.direction, not self.direction, in case ours was None
-        self.timer.cancel()
-        self.timer = timers.Timer(2500, self.start_wandering)
         timers.Timer(700, self.startle_finish)
 
     def startle_finish(self):
         self.stand()
         self.interject(random.choice((GREETINGS)))
         self.is_startleable = True
+
+    def pause(self, duration = 2500):
+        self.direction = None
+        self.stand()
+        self.timer.cancel()
+        self.timer = timers.Timer(duration, self.start_wandering)

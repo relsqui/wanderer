@@ -52,7 +52,11 @@ FONT_COLOR = (0, 0, 0)
 FONT_SIZE = 20  # pixels
 GREETINGS = []
 OUCHES = []
-files = {"greetings.txt":GREETINGS, "ouches.txt":OUCHES}
+CALLS = []
+files = {}
+files["greetings.txt"] = GREETINGS
+files["ouches.txt"] = OUCHES
+files["calls.txt"] = CALLS
 for filename, constant in files.items():
     f = open(os.path.join("data", filename))
     for line in f:
