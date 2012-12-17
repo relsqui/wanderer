@@ -40,7 +40,7 @@ class Character(pygame.sprite.Sprite):
         self.animation = self.animations[direction]
 
     def stand(self, direction = None):
-        "Stops walking animation, optionally facing the given direction."
+        "Stops walking animation, and optionally faces the given direction."
         if direction is not None:
             self.turn(direction)
         self.animation.stop()

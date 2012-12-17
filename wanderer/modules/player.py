@@ -65,6 +65,9 @@ class Player(object):
         else:
             self.interject(random.choice(OUCHES))
 
+    def stop(self):
+        self.sprite.stand()
+
     def say(self, message):
         "Emit a message as a floating particle."
         offset = -1 * (self.sprite.rect.height/2 + FONT_SIZE/2 + 2)
