@@ -7,7 +7,7 @@ class Agent(object):
     Data relating to an agent (PC/NPC). Arguments:
         game            (game.Game object)
         name            (optional: string to call this agent)
-        sprite          (optional: which # sprite to use, defaults to random)
+        spriteno        (optional: which # sprite to use, defaults to random)
         location        (optional: (x, y) location to center sprite on)
     """
 
@@ -66,7 +66,7 @@ class Agent(object):
         self.game.all_sprites.add(self.sprite)
 
     def update(self):
-        "Placeholder for when there's more to update."
+        "Placeholder for overriding."
         pass
 
     def colliding(self):
@@ -89,9 +89,22 @@ class Agent(object):
         collision_test = pygame.sprite.collide_mask
         collided_sprites = [s for s in all_other_sprites if collision_test(self.sprite, s)]
         # This is what pygame.sprite.spritecollide is for, but it wasn't working for some reason.
-        if collided_sprites:
-            return collided_sprites
-        return False
+        return collided_sprites
+
+    def towards(self, target):
+        targetx, targety = target.center
+        selfx, selfy = self.sprite.rect.center
+        if abs(selfx - targetx) > abs(selfy - targety):
+            if targetx < selfx:
+                facing = LEFT
+            else:
+                facing = RIGHT
+        else:
+            if targety < selfy:
+                facing = UP
+            else:
+                facing = DOWN
+        return facing
 
     def walk(self, direction, turn = True):
         "Try to move in a direction."
@@ -154,7 +167,7 @@ class Player(Agent):
         if sprites:
             for sprite in sprites:
                 if isinstance(sprite.agent, Npc) and sprite.agent.is_startleable:
-                    timers.Timer(100, sprite.agent.startle)
+                    timers.Timer(100, sprite.agent.startle, self)
                     # this gives us time to finish the loop and uncollide
         return sprites
 
@@ -184,14 +197,16 @@ class Npc(Agent):
         self.direction = None
         self.timer = timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.start_wandering)
 
-    def startle(self):
+    def startle(self, startler):
         self.is_startleable = False
         self.direction = None
-        self.walk(OPPOSITE[self.sprite.direction], False)
+        facing = self.towards(startler.sprite.rect)
+        self.sprite.turn(facing)
+        self.walk(OPPOSITE[facing], False)
         # self.sprite.direction, not self.direction, in case ours was None
         self.timer.cancel()
-        self.timer = timers.Timer(1500, self.start_wandering)
-        timers.Timer(600, self.startle_finish)
+        self.timer = timers.Timer(2500, self.start_wandering)
+        timers.Timer(700, self.startle_finish)
 
     def startle_finish(self):
         self.stand()
