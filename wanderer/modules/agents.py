@@ -110,16 +110,20 @@ class Agent(object):
 
 class Player(Agent):
     def check_collisions(self):
-        if not self.area.contains(self.rect):
+        "Returns True if sprite is free of collisions, False otherwise. May also do other things."
+        if not self.area.contains(self.sprite.rect):
             print self, "collided with a wall"
             self.interject(random.choice(OUCHES))
             return False
+
         all_other_sprites = self.all_sprites.sprites()
         all_other_sprites.remove(self.sprite)
         collision_test = pygame.sprite.collide_mask
         collided_sprites = [s for s in all_other_sprites if collision_test(self.sprite, s)]
-        # collided_sprites = pygame.sprite.spritecollide(self.sprite, self.all_sprites, False).remove(self.sprite)
-        # ^ This parses fine but returns an empty list, even though it should be doing exactly the same thing as the previous line.
+        # Couldn't get pygame.sprite.spritecollide to work for some reason.
         if collided_sprites:
+            for sprite in collided_sprites:
+                sprite.agent.interject(random.choice(GREETINGS))
             return False
+
         return True
