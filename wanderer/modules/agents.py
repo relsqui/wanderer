@@ -154,21 +154,19 @@ class Npc(Agent):
     def __init__(self, *args):
         super(Npc, self).__init__(*args)
         self.speed = NPC_SPEED
-        self.wandering = False
-        self.direction = DOWN
+        self.direction = None
         timers.Timer(1000, self.start_wandering)
 
     def update(self):
-        if self.wandering:
+        if self.direction is not None:
             if not self.move(self.direction):
                 self.direction = OPPOSITE[self.direction]
 
     def start_wandering(self):
-        self.wandering = True
         self.direction = random.choice(DIRECTIONS)
         timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.stop_wandering)
 
     def stop_wandering(self):
-        self.wandering = False
+        self.direction = None
         self.stop()
         timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.start_wandering)
