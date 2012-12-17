@@ -71,8 +71,6 @@ class Game(object):
             timer.update(loop_time)
 
         self.screen.blit(self.background, (0,0))
-        for sprite in self.all_sprites:
-            self.screen.fill((255, 200, 200), sprite.rect)
         self.all_sprites.draw(self.screen)
         self.all_particles.draw(self.screen)
         pygame.display.flip()

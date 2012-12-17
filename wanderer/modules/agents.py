@@ -57,8 +57,8 @@ class Agent(object):
         "Placeholder for when there's more to update."
         pass
 
-    def check_collisions(self, position):
-        if self.area.contains(position):
+    def check_collisions(self):
+        if self.area.contains(self.rect):
             return True
 
     def move(self, direction):
@@ -72,9 +72,10 @@ class Agent(object):
             vector = (-self.speed, 0)
         else:
             vector = (self.speed, 0)
-        newpos = self.sprite.rect.move(vector)
-        if self.check_collisions(newpos):
-            self.sprite.rect = newpos
+        oldpos = self.sprite.rect.copy()
+        self.sprite.rect.move_ip(vector)
+        if not self.check_collisions():
+            self.sprite.rect = oldpos
 
     def stop(self):
         self.sprite.stand()
@@ -108,16 +109,17 @@ class Agent(object):
 
 
 class Player(Agent):
-    def check_collisions(self, position):
-        if not self.area.contains(position):
+    def check_collisions(self):
+        if not self.area.contains(self.rect):
+            print self, "collided with a wall"
             self.interject(random.choice(OUCHES))
             return False
         all_other_sprites = self.all_sprites.sprites()
         all_other_sprites.remove(self.sprite)
-        collided_sprites = [s for s in all_other_sprites if pygame.sprite.collide_rect(self.sprite, s)]
+        collision_test = pygame.sprite.collide_mask
+        collided_sprites = [s for s in all_other_sprites if collision_test(self.sprite, s)]
         # collided_sprites = pygame.sprite.spritecollide(self.sprite, self.all_sprites, False).remove(self.sprite)
         # ^ This parses fine but returns an empty list, even though it should be doing exactly the same thing as the previous line.
         if collided_sprites:
-            print "{} collided with {}".format(self, collided_sprites)
             return False
         return True
