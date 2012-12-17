@@ -8,22 +8,23 @@ class Player(object):
         sprite          (sprites.Character)
         screen          (pygame.Surface inside which the player can move)
         font            (pygame.font.Font for use in speaking)
-        all_particles   (list of all particles, for appending speech to)
+        all_particles   (list of all particles)
+        all_sprites     (list of all sprites)
     """
 
-    def __init__(self, screen, font, all_particles):
+    def __init__(self, screen, font, all_particles, all_sprites):
         super(Player, self).__init__()
+        self.all_particles = all_particles
+        self.all_sprites = all_sprites
+
         self.area = screen.get_rect()
-        self.rect = self.area   # so the sprite will be centered
         self.set_sprite(2)
-        self.rect = self.sprite.rect
 
         self.speed = PLAYER_SPEED
 
         self.font = font
         self.last_greetings = [None for x in xrange(5)]
         self.interject_ok = True
-        self.all_particles = all_particles
 
     def set_sprite(self, spriteno):
         spriteno -= 1
@@ -34,8 +35,14 @@ class Player(object):
         char_cursor = pygame.Rect(charx, chary, CHAR_WIDTH, CHAR_HEIGHT)
         sprite_sheet = pygame.image.load(LADY_SPRITES).convert()
         char_sheet = sprite_sheet.subsurface(char_cursor)
-        location = self.rect.center
+        if hasattr(self, "sprite"):
+            location = self.sprite.rect
+            self.sprite.kill()
+        else:
+            location = pygame.Rect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT)
+            location.center = self.area.center
         self.sprite = sprites.Character(char_sheet, location)
+        self.all_sprites.add(self.sprite)
 
     def update(self):
         "Placeholder for when there's more to update."

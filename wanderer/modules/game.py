@@ -30,8 +30,8 @@ class Game(object):
 
         # Sprites and player
         self.all_particles = particles.ParticleGroup()
-        self.player = player.Player(self.screen, self.font, self.all_particles)
-        self.all_sprites = pygame.sprite.RenderPlain((self.player.sprite,))
+        self.all_sprites = pygame.sprite.RenderPlain()
+        self.player = player.Player(self.screen, self.font, self.all_particles, self.all_sprites)
         print " * sprites"
 
         # Miscellany
@@ -47,11 +47,13 @@ class Game(object):
 
         new_events = pygame.event.get()
         for event in new_events:
+            """
             print "Heard a", pygame.event.event_name(event.type),
             if event.type in (KEYDOWN, KEYUP):
                 print "({})".format(pygame.key.name(event.key))
             else:
                 print
+            """
             if self.handlers.get(event.type):
                 for handler in self.handlers[event.type]:
                     handler.respond(event)
