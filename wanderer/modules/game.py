@@ -31,11 +31,11 @@ class Game(object):
         # Sprites and agents
         self.all_particles = particles.ParticleGroup()
         self.all_sprites = pygame.sprite.RenderPlain()
-        self.player = agents.Player(self.screen, self.font, self.all_particles, self.all_sprites, 2)
+        self.player = agents.Player(self.screen, self.font, self.all_particles, self.all_sprites, 2, None, "Player")
         buddyx = random.randrange(0, WINDOW_WIDTH - SPRITE_WIDTH)
         buddyy = random.randrange(0, WINDOW_HEIGHT - SPRITE_HEIGHT)
-        buddy_location = pygame.Rect(buddyx, buddyy, SPRITE_HEIGHT, SPRITE_WIDTH)
-        self.buddy = agents.Agent(self.screen, self.font, self.all_particles, self.all_sprites, None, buddy_location)
+        buddy_location = pygame.Rect(buddyx, buddyy, SPRITE_WIDTH, SPRITE_HEIGHT)
+        self.buddy = agents.Agent(self.screen, self.font, self.all_particles, self.all_sprites, None, buddy_location, "Buddy")
         self.all_agents = [self.player]
         print " * sprites & agents"
 
@@ -71,6 +71,8 @@ class Game(object):
             timer.update(loop_time)
 
         self.screen.blit(self.background, (0,0))
+        for sprite in self.all_sprites:
+            self.screen.fill((255, 200, 200), sprite.rect)
         self.all_sprites.draw(self.screen)
         self.all_particles.draw(self.screen)
         pygame.display.flip()

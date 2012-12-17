@@ -10,8 +10,9 @@ class Character(pygame.sprite.Sprite):
 
     The sprite sheet will be chopped up and animated according to various layouts specs in the constants module.
     """
-    def __init__(self, sheet, location):
+    def __init__(self, sheet, location, agent = None):
         super(Character, self).__init__()
+        self.agent = agent
         self.sheet = sheet
         self.animations = []
         self.init_images()
@@ -19,6 +20,9 @@ class Character(pygame.sprite.Sprite):
         self.direction = DOWN
         self.animation = self.animations[self.direction]
         self.update()
+
+    def __repr__(self):
+        return "{}'s sprite".format(self.agent)
 
     def init_images(self):
         "Internal. Initialize animation frames from sprite sheet."

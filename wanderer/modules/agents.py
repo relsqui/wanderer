@@ -11,23 +11,28 @@ class Agent(object):
         all_sprites     (list of all sprites)
         sprite          (optional: which # sprite to use, defaults to random)
         location        (optional: (x, y) location to center sprite on)
+        name            (optional: string to call this agent)
     """
 
-    def __init__(self, screen, font, all_particles, all_sprites, sprite = None, location = None):
+    def __init__(self, screen, font, all_particles, all_sprites, sprite = None, location = None, name = "Anonymous Agent"):
         super(Agent, self).__init__()
         self.all_particles = all_particles
         self.all_sprites = all_sprites
+        self.name = name
+        self.speed = PLAYER_SPEED
 
         self.area = screen.get_rect()
         if not sprite:
             sprite = random.randrange(1, 8)
         self.set_sprite(sprite, location)
-
-        self.speed = PLAYER_SPEED
+        self.rect = self.sprite.rect
 
         self.font = font
         self.last_greetings = [None for x in xrange(5)]
         self.interject_ok = True
+
+    def __repr__(self):
+        return self.name
 
     def set_sprite(self, spriteno, location = None):
         spriteno -= 1
@@ -45,7 +50,7 @@ class Agent(object):
         elif not location:
             location = pygame.Rect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT)
             location.center = self.area.center
-        self.sprite = sprites.Character(char_sheet, location)
+        self.sprite = sprites.Character(char_sheet, location, self)
         self.all_sprites.add(self.sprite)
 
     def update(self):
@@ -104,7 +109,15 @@ class Agent(object):
 
 class Player(Agent):
     def check_collisions(self, position):
-        if self.area.contains(position):
-            return True
-        else:
+        if not self.area.contains(position):
             self.interject(random.choice(OUCHES))
+            return False
+        all_other_sprites = self.all_sprites.sprites()
+        all_other_sprites.remove(self.sprite)
+        collided_sprites = [s for s in all_other_sprites if pygame.sprite.collide_rect(self.sprite, s)]
+        # collided_sprites = pygame.sprite.spritecollide(self.sprite, self.all_sprites, False).remove(self.sprite)
+        # ^ This parses fine but returns an empty list, even though it should be doing exactly the same thing as the previous line.
+        if collided_sprites:
+            print "{} collided with {}".format(self, collided_sprites)
+            return False
+        return True
