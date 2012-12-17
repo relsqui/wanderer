@@ -21,15 +21,25 @@ class Agent(object):
         self.interject_ok = True
 
         self.area = game.screen.get_rect()
-        if not spriteno:
-            spriteno = random.randrange(1, 8)
-        self.set_sprite(spriteno, location)
+        if spriteno:
+            self.spriteno = spriteno
+        else:
+            self.spriteno = None
+        self.set_sprite(location = location)
 
     def __repr__(self):
         return self.name
 
-    def set_sprite(self, spriteno, location = None):
-        spriteno -= 1
+    def set_sprite(self, spriteno = None, location = None):
+        if spriteno:
+            self.spriteno = spriteno
+        else:
+            if self.spriteno:
+                spriteno = self.spriteno
+            else:
+                self.spriteno = random.randint(1, 8)
+                spriteno = self.spriteno
+        spriteno = self.spriteno - 1
         column = spriteno % SHEET_COLUMNS
         row = spriteno / SHEET_COLUMNS
         charx = column * CHAR_WIDTH
@@ -150,6 +160,9 @@ class Player(Agent):
 class Npc(Agent):
     def __init__(self, *args):
         super(Npc, self).__init__(*args)
+        while self.spriteno == self.game.player.spriteno:
+            self.spriteno = None
+            self.set_sprite()
         self.speed = NPC_SPEED
         self.direction = None
         timers.Timer(1000, self.start_wandering)
