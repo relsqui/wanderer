@@ -32,15 +32,15 @@ class Game(object):
         self.all_particles = particles.ParticleGroup()
         self.all_sprites = pygame.sprite.RenderPlain()
         self.player = agents.Player(self, "Player")
-        self.buddy = agents.Npc(self, "Buddy")
-        self.all_agents = [self.player, self.buddy]
-        self.all_npcs = [self.buddy]
+        self.all_npcs = [agents.Npc(self, "NPC 1"), agents.Npc(self, "NPC 2")]
+        self.all_agents = [self.player] + self.all_npcs
         print " * sprites & agents"
 
         # Miscellany
         self.clock = pygame.time.Clock()
         self.init_controls()
         print " * controls & clock"
+        print "Done."
 
 
     def loop(self):
