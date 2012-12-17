@@ -5,20 +5,23 @@ from modules import particles, timers, sprites
 class Agent(object):
     """
     Data relating to an agent (PC/NPC). Arguments:
-        sprite          (sprites.Character)
         screen          (pygame.Surface inside which the agent can move)
         font            (pygame.font.Font for use in speaking)
         all_particles   (list of all particles)
         all_sprites     (list of all sprites)
+        sprite          (optional: which # sprite to use, defaults to random)
+        location        (optional: (x, y) location to center sprite on)
     """
 
-    def __init__(self, screen, font, all_particles, all_sprites):
+    def __init__(self, screen, font, all_particles, all_sprites, sprite = None, location = None):
         super(Agent, self).__init__()
         self.all_particles = all_particles
         self.all_sprites = all_sprites
 
         self.area = screen.get_rect()
-        self.set_sprite(2)
+        if not sprite:
+            sprite = random.randrange(1, 8)
+        self.set_sprite(sprite, location)
 
         self.speed = PLAYER_SPEED
 
@@ -26,19 +29,20 @@ class Agent(object):
         self.last_greetings = [None for x in xrange(5)]
         self.interject_ok = True
 
-    def set_sprite(self, spriteno):
+    def set_sprite(self, spriteno, location = None):
         spriteno -= 1
-        row = spriteno % SHEET_COLUMNS
-        column = spriteno / SHEET_COLUMNS
-        charx = row * CHAR_WIDTH
-        chary = column * CHAR_HEIGHT
+        column = spriteno % SHEET_COLUMNS
+        row = spriteno / SHEET_COLUMNS
+        charx = column * CHAR_WIDTH
+        chary = row * CHAR_HEIGHT
         char_cursor = pygame.Rect(charx, chary, CHAR_WIDTH, CHAR_HEIGHT)
         sprite_sheet = pygame.image.load(LADY_SPRITES).convert()
         char_sheet = sprite_sheet.subsurface(char_cursor)
         if hasattr(self, "sprite"):
-            location = self.sprite.rect
+            if not location:
+                location = self.sprite.rect
             self.sprite.kill()
-        else:
+        elif not location:
             location = pygame.Rect(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT)
             location.center = self.area.center
         self.sprite = sprites.Character(char_sheet, location)

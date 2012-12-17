@@ -1,4 +1,4 @@
-import pygame, sys
+import pygame, sys, random
 from modules.constants import *
 from modules import agents, sprites, particles, timers
 
@@ -28,12 +28,16 @@ class Game(object):
         pygame.key.set_repeat(KEY_DELAY, KEY_INTERVAL)
         print " * interface"
 
-        # Sprites and player
+        # Sprites and agents
         self.all_particles = particles.ParticleGroup()
         self.all_sprites = pygame.sprite.RenderPlain()
-        self.player = agents.Agent(self.screen, self.font, self.all_particles, self.all_sprites)
+        self.player = agents.Agent(self.screen, self.font, self.all_particles, self.all_sprites, 2)
+        buddyx = random.randrange(0, WINDOW_WIDTH - SPRITE_WIDTH)
+        buddyy = random.randrange(0, WINDOW_HEIGHT - SPRITE_HEIGHT)
+        buddy_location = pygame.Rect(buddyx, buddyy, SPRITE_HEIGHT, SPRITE_WIDTH)
+        self.buddy = agents.Agent(self.screen, self.font, self.all_particles, self.all_sprites, None, buddy_location)
         self.all_agents = [self.player]
-        print " * sprites"
+        print " * sprites & agents"
 
         # Miscellany
         self.clock = pygame.time.Clock()

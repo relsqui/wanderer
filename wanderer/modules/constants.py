@@ -9,7 +9,9 @@ Various constants for use in other modules.
 DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 
 # Window
-WINDOW_SIZE = (300,250)
+WINDOW_HEIGHT = 250 # pixels
+WINDOW_WIDTH = 300  # pixels
+WINDOW_SIZE = (WINDOW_WIDTH, WINDOW_HEIGHT)
 WINDOW_TITLE = "Wanderer"
 BACKGROUND_COLOR = (50, 200, 70)
 
