@@ -31,10 +31,12 @@ class Game(object):
         # Sprites and agents
         self.all_particles = particles.ParticleGroup()
         self.all_sprites = pygame.sprite.RenderPlain()
+        self.all_agents = []
+        self.all_npcs = []
         self.player = agents.Player(self, "Player")
-        self.all_npcs = [agents.Npc(self, "NPC 1"), agents.Npc(self, "NPC 2")]
-        self.all_agents = [self.player] + self.all_npcs
-        print " * sprites & agents"
+        agents.Npc(self, "NPC 1")
+        agents.Npc(self, "NPC 2")
+        print " * agents"
 
         # Miscellany
         self.clock = pygame.time.Clock()

@@ -14,6 +14,7 @@ class Agent(object):
     def __init__(self, game, name = "Anonymous Agent", spriteno = None, location = None):
         super(Agent, self).__init__()
         self.game = game
+        self.game.all_agents.append(self)
         self.name = name
         self.speed = PLAYER_SPEED
 
@@ -54,6 +55,9 @@ class Agent(object):
             self.sprite.kill()
             self.sprite = sprites.Character(self, char_sheet, location, direction)
         elif not location:
+            old_iok = self.interject_ok
+            self.interject_ok = False
+            # To keep agents from responding to collisions while testing locations
             while True:
                 locx = random.randrange(0, self.area.width - SPRITE_WIDTH)
                 locy = random.randrange(0, self.area.height - SPRITE_HEIGHT)
@@ -63,6 +67,7 @@ class Agent(object):
                     break
                 else:
                     self.sprite.kill()
+            self.interject_ok = old_iok
         self.game.all_sprites.add(self.sprite)
 
     def update(self):
@@ -183,18 +188,27 @@ class Player(Agent):
 class Npc(Agent):
     def __init__(self, *args):
         super(Npc, self).__init__(*args)
-        while self.spriteno == self.game.player.spriteno:
-            self.spriteno = None
-            self.set_sprite()
+        if len(self.game.all_agents) < 8:
+            in_use = [a.spriteno for a in self.game.all_agents]
+            while self.spriteno in in_use:
+                self.spriteno = None
+                self.set_sprite()
+        self.game.all_npcs.append(self)
         self.speed = NPC_SPEED
         self.direction = None
         self.is_startleable = True
-        self.timer = timers.Timer(1000, self.start_wandering)
+        self.timer = timers.Timer(random.randint(1000, 3000), self.start_wandering)
 
     def update(self):
         if self.direction is not None:
             if not self.walk(self.direction):
                 self.direction = OPPOSITE[self.direction]
+
+    def colliding_sprites(self):
+        sprites = super(Npc, self).colliding_sprites()
+        if sprites:
+            self.interject("Pardon me.")
+        return sprites
 
     def start_wandering(self):
         self.direction = random.choice(DIRECTIONS)
@@ -211,11 +225,10 @@ class Npc(Agent):
         facing = self.towards(startler.sprite.rect)
         self.turn(facing)
         self.walk(OPPOSITE[facing], False)
-        timers.Timer(700, self.startle_finish)
+        timers.Timer(100, self.reset_startle)
 
-    def startle_finish(self):
+    def reset_startle(self):
         self.stand()
-        self.interject(random.choice((GREETINGS)))
         self.is_startleable = True
 
     def pause(self, duration = 2500):
