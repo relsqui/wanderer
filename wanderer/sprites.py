@@ -1,6 +1,6 @@
 import pygame, os, random
-from modules import particles, timers
-from modules.constants import *
+from wanderer import particles, timers
+from wanderer.constants import *
 
 class Character(pygame.sprite.Sprite):
     """

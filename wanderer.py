@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from modules import game
+from wanderer import game
 
 game = game.Game()
 while True:

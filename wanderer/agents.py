@@ -1,6 +1,6 @@
 import random, pygame
-from modules.constants import *
-from modules import particles, timers, sprites
+from wanderer.constants import *
+from wanderer import particles, timers, sprites
 
 class Agent(object):
     """

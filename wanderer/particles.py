@@ -1,6 +1,6 @@
 import pygame
-from modules.constants import *
-from modules import timers
+from wanderer.constants import *
+from wanderer import timers
 
 class ParticleGroup(pygame.sprite.Group):
     def draw(self, screen):
@@ -10,7 +10,7 @@ class ParticleGroup(pygame.sprite.Group):
 class Particle(pygame.sprite.Sprite):
     """
     A temporary sprite which will disappear after a short time. Arguments:
-        surface     (pygames.Surface)
+        surface     (pygames.Surface, particle contents)
         location    (pygames.Rect, particle will be centered on it)
         timeout     (milliseconds)
         vector      ((x, y) integer tuple, defaults to (0,0) for no movement)

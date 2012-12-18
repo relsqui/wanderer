@@ -29,7 +29,8 @@ PLAYER_SPEED = 3    # pixels per tick
 NPC_SPEED = 1       # pixels per tick
 MIN_WANDER = 2000   # milliseconds (for NPC to pause or walk)
 MAX_WANDER = 4000   # milliseconds (for NPC to pause or walk)
-LADY_SPRITES = os.path.join("images", "lady_sprites.png")
+IMAGE_DIR = os.path.join("wanderer", "images")
+LADY_SPRITES = os.path.join(IMAGE_DIR, "lady_sprites.png")
 
 # Controls
 KEY_DELAY = 50
@@ -57,8 +58,9 @@ files = {}
 files["greetings.txt"] = GREETINGS
 files["ouches.txt"] = OUCHES
 files["calls.txt"] = CALLS
+DATA_DIR = os.path.join("wanderer", "data")
 for filename, constant in files.items():
-    f = open(os.path.join("data", filename))
+    f = open(os.path.join(DATA_DIR, filename))
     for line in f:
         constant.append(line.strip())
     f.close()
