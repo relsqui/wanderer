@@ -1,4 +1,4 @@
-import os
+import os, sys
 from pygame.locals import *
 
 """
@@ -9,6 +9,10 @@ Various constants for use in other modules.
 DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 DIRECTIONS = [DOWN, LEFT, RIGHT, UP]
 OPPOSITE = [UP, RIGHT, LEFT, DOWN]
+if getattr(sys, 'frozen', None):
+     BASEDIR = sys._MEIPASS
+else:
+     BASEDIR = os.path.dirname(__file__)
 
 # Window
 WINDOW_HEIGHT = 250 # pixels
@@ -29,7 +33,7 @@ PLAYER_SPEED = 3    # pixels per tick
 NPC_SPEED = 1       # pixels per tick
 MIN_WANDER = 2000   # milliseconds (for NPC to pause or walk)
 MAX_WANDER = 4000   # milliseconds (for NPC to pause or walk)
-IMAGE_DIR = os.path.join("wanderer", "images")
+IMAGE_DIR = os.path.join(BASEDIR, "images")
 LADY_SPRITES = os.path.join(IMAGE_DIR, "lady_sprites.png")
 
 # Controls
@@ -58,7 +62,7 @@ files = {}
 files["greetings.txt"] = GREETINGS
 files["ouches.txt"] = OUCHES
 files["calls.txt"] = CALLS
-DATA_DIR = os.path.join("wanderer", "data")
+DATA_DIR = os.path.join(BASEDIR, "data")
 for filename, constant in files.items():
     f = open(os.path.join(DATA_DIR, filename))
     for line in f:
