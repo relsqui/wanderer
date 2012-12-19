@@ -6,7 +6,7 @@ a = Analysis(['wanderer.py'],
 a.datas += Tree('wanderer/data', prefix='data')
 pyz = PYZ(a.pure)
 exe = EXE(pyz,
-          a.scripts,
+          a.scripts + [('O', '', 'OPTION')],
           a.binaries,
           a.zipfiles,
           a.datas,
