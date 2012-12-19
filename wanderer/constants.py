@@ -10,9 +10,9 @@ DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 DIRECTIONS = [DOWN, LEFT, RIGHT, UP]
 OPPOSITE = [UP, RIGHT, LEFT, DOWN]
 if getattr(sys, 'frozen', None):
-     BASEDIR = sys._MEIPASS
+    BASEDIR = sys._MEIPASS
 else:
-     BASEDIR = os.path.dirname(__file__)
+    BASEDIR = os.path.dirname(__file__)
 
 # Window
 WINDOW_HEIGHT = 250 # pixels
