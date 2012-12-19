@@ -19,12 +19,20 @@ class Game(object):
         print " * pygame"
 
         # Interface
+        print "   - creating window"
         self.window = pygame.display.set_mode(WINDOW_SIZE)
+        print "   - setting caption"
         pygame.display.set_caption(WINDOW_TITLE)
+        print "   - defining screen"
         self.screen = pygame.display.get_surface()
+        print "   - creating background"
         self.background = pygame.Surface(self.screen.get_size()).convert()
+        print "   - filling background"
         self.background.fill(BACKGROUND_COLOR)
-        self.font = pygame.font.Font(None, FONT_SIZE)
+        print "   - setting font"
+        # freeware font from http://www.04.jp.org/
+        self.font = pygame.font.Font(FONT_FILE, FONT_SIZE)
+        print "   - setting key repeat"
         pygame.key.set_repeat(KEY_DELAY, KEY_INTERVAL)
         print " * interface"
 

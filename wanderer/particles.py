@@ -44,7 +44,7 @@ class TextParticle(Particle):
     A particle of rendered text. See Particle for arguments. Defaults to a vector of (0, -2), with fading, and will automatically calculate a timeout from string length if none is provided.
     """
 
-    def __init__(self, font, message, location, timeout = None, vector = (0, -2), fade = True):
+    def __init__(self, font, message, location, timeout = None, vector = (0, -1), fade = True):
         text = font.render(message, False, FONT_COLOR)
         if timeout is None:
             timeout = len(message) * TEXT_TIMEOUT_PER_CHAR

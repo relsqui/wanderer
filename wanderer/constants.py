@@ -13,6 +13,7 @@ if getattr(sys, 'frozen', None):
     BASEDIR = sys._MEIPASS
 else:
     BASEDIR = os.path.dirname(__file__)
+DATA_DIR = os.path.join(BASEDIR, "data")
 
 # Window
 WINDOW_HEIGHT = 250 # pixels
@@ -33,7 +34,7 @@ PLAYER_SPEED = 3    # pixels per tick
 NPC_SPEED = 1       # pixels per tick
 MIN_WANDER = 2000   # milliseconds (for NPC to pause or walk)
 MAX_WANDER = 4000   # milliseconds (for NPC to pause or walk)
-IMAGE_DIR = os.path.join(BASEDIR, "images")
+IMAGE_DIR = os.path.join(DATA_DIR, "images")
 LADY_SPRITES = os.path.join(IMAGE_DIR, "lady_sprites.png")
 
 # Controls
@@ -47,14 +48,15 @@ CONTROLS = (LEFT_KEYS, RIGHT_KEYS, UP_KEYS, DOWN_KEYS)
 
 # Timers
 PARTICLE_DEFAULT_TIMEOUT = 500  # milliseconds
-TEXT_TIMEOUT_PER_CHAR = 80      # milliseconds
+TEXT_TIMEOUT_PER_CHAR = 100      # milliseconds
 INTERJECT_TIMEOUT = 500         # milliseconds
-FADE_STEPS = 5
+FADE_STEPS = 3
 FADE_AMOUNT = 255/FADE_STEPS
 
 # Text
 FONT_COLOR = (0, 0, 0)
-FONT_SIZE = 20  # pixels
+FONT_SIZE = 8   # point
+FONT_FILE = os.path.join(DATA_DIR, "04B_11__.TTF")
 GREETINGS = []
 OUCHES = []
 CALLS = []
@@ -62,9 +64,9 @@ files = {}
 files["greetings.txt"] = GREETINGS
 files["ouches.txt"] = OUCHES
 files["calls.txt"] = CALLS
-DATA_DIR = os.path.join(BASEDIR, "data")
+TEXT_DIR = os.path.join(DATA_DIR, "text")
 for filename, constant in files.items():
-    f = open(os.path.join(DATA_DIR, filename))
+    f = open(os.path.join(TEXT_DIR, filename))
     for line in f:
         constant.append(line.strip())
     f.close()

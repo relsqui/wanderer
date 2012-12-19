@@ -18,7 +18,6 @@ coll = COLLECT(exe,
                a.zipfiles,
                a.datas,
                Tree("wanderer/data", prefix="data"),
-               Tree("wanderer/images", prefix="images"),
                strip=None,
                upx=True,
                name=os.path.join('dist'))
