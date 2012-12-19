@@ -22,6 +22,7 @@ class Timer(object):
             all_timers.remove(self)
 
     def cancel(self):
-        all_timers.remove(self)
+        if self in all_timers:
+            all_timers.remove(self)
 
 all_timers = []

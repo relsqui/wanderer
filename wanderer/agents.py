@@ -192,6 +192,7 @@ class Player(Agent):
             npc.pause()
             npc.turn(npc.towards(self.sprite.rect))
 
+
 class Npc(Agent):
     def __init__(self, *args):
         super(Npc, self).__init__(*args)

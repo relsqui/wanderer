@@ -42,8 +42,13 @@ class Character(pygame.sprite.Sprite):
 
     def turn(self, direction):
         "Changes the orientation of the sprite."
-        self.direction = direction
-        self.animation = self.animations[direction]
+        if self.direction != direction:
+            self.direction = direction
+            was_walking = self.animation.running
+            self.animation.stop()
+            self.animation = self.animations[direction]
+            if was_walking:
+                self.animation.start()
 
     def stand(self, direction = None):
         "Stops walking animation, and optionally faces the given direction."
@@ -77,6 +82,7 @@ class Animation(object):
         self.default = default
         self.current = default
         self.running = False
+        self.timer = None
         if not colorkey:
             colorkey = self.frames[default].get_at((0,0))
         self.colorkey = colorkey
@@ -85,7 +91,7 @@ class Animation(object):
         "Internal. Update the image, if running."
         if self.running:
             self.current = (self.current + 1) % len(self.frames)
-            timers.Timer(self.speed, self.cycle)
+            self.timer = timers.Timer(self.speed, self.cycle)
 
     def image(self):
         "Retrieve a pygame.Surface of the current animation frame."
@@ -103,3 +109,5 @@ class Animation(object):
         "Pause the animation."
         self.running = False
         self.current = self.default
+        if self.timer:
+            self.timer.cancel()

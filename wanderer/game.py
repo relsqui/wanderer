@@ -42,8 +42,8 @@ class Game(object):
         self.all_agents = []
         self.all_npcs = []
         self.player = agents.Player(self, "Player")
-        agents.Npc(self, "NPC 1")
-        agents.Npc(self, "NPC 2")
+        # agents.Npc(self, "Freddie")
+        agents.Npc(self, "Ginger")
         print " * agents"
 
         # Miscellany
@@ -82,6 +82,7 @@ class Game(object):
         self.all_sprites.draw(self.screen)
         self.all_particles.draw(self.screen)
         pygame.display.flip()
+        sys.stdout.flush()
 
     def init_controls(self):
         "Internal. Initialize the game controls."
