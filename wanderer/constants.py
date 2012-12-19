@@ -10,8 +10,8 @@ DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 DIRECTIONS = [DOWN, LEFT, RIGHT, UP]
 OPPOSITE = [UP, RIGHT, LEFT, DOWN]
 if getattr(sys, 'frozen', None):
-    BASEDIR = os.path.join(os.environ.get( "_MEIPASS2", os.path.abspath(".")), "wanderer")
-    # BASEDIR = sys._MEIPASS
+    # BASEDIR = os.path.join(os.environ.get("_MEIPASS2", os.path.abspath(".")), "wanderer")
+    BASEDIR = sys._MEIPASS
 else:
     BASEDIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(BASEDIR, "data")
