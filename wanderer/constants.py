@@ -10,7 +10,8 @@ DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 DIRECTIONS = [DOWN, LEFT, RIGHT, UP]
 OPPOSITE = [UP, RIGHT, LEFT, DOWN]
 if getattr(sys, 'frozen', None):
-    BASEDIR = sys._MEIPASS
+    BASEDIR = os.path.join(os.environ.get( "_MEIPASS2", os.path.abspath(".")), "wanderer")
+    # BASEDIR = sys._MEIPASS
 else:
     BASEDIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(BASEDIR, "data")
@@ -46,17 +47,17 @@ UP_KEYS = (K_k, K_UP, K_w)
 DOWN_KEYS = (K_j, K_DOWN, K_s)
 CONTROLS = (LEFT_KEYS, RIGHT_KEYS, UP_KEYS, DOWN_KEYS)
 
-# Timers
+# Particles
 PARTICLE_DEFAULT_TIMEOUT = 500  # milliseconds
-TEXT_TIMEOUT_PER_CHAR = 100      # milliseconds
-INTERJECT_TIMEOUT = 500         # milliseconds
-FADE_STEPS = 3
+FADE_STEPS = 5
 FADE_AMOUNT = 255/FADE_STEPS
 
 # Text
 FONT_COLOR = (0, 0, 0)
 FONT_SIZE = 8   # point
 FONT_FILE = os.path.join(DATA_DIR, "04B_11__.TTF")
+TEXT_TIMEOUT_PER_CHAR = 110      # milliseconds; this is for particles
+INTERJECT_TIMEOUT = 500          # milliseconds; so is this
 GREETINGS = []
 OUCHES = []
 CALLS = []
