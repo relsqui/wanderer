@@ -32,6 +32,7 @@ class Game(object):
 
         # Files
         self.TEXT = {}
+        self.SPRITES = {}
         self.init_files()
 
         # Sprites and agents
@@ -91,7 +92,8 @@ class Game(object):
             for line in f:
                 self.TEXT[name].append(line.strip())
             f.close()
-
+        image_directory = os.path.join(DATA_DIR, "images")
+        self.SPRITES = os.path.join(image_directory, "lady_sprites.png")
 
     def init_controls(self):
         "Internal. Initialize the game controls."

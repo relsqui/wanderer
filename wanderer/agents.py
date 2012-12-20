@@ -47,7 +47,7 @@ class Agent(object):
         charx = column * CHAR_WIDTH
         chary = row * CHAR_HEIGHT
         char_cursor = pygame.Rect(charx, chary, CHAR_WIDTH, CHAR_HEIGHT)
-        sprite_sheet = pygame.image.load(LADY_SPRITES).convert()
+        sprite_sheet = pygame.image.load(self.game.SPRITES).convert()
         char_sheet = sprite_sheet.subsurface(char_cursor)
         if hasattr(self, "sprite"):
             if not location:

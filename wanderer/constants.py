@@ -29,8 +29,6 @@ CHAR_WIDTH = 96     # pixels
 CHAR_HEIGHT = 136   # pixels
 SHEET_ROWS = 2
 SHEET_COLUMNS = 4
-IMAGE_DIR = os.path.join(DATA_DIR, "images")
-LADY_SPRITES = os.path.join(IMAGE_DIR, "lady_sprites.png")
 
 # Agents
 WALK_RATE = 250     # milliseconds between animation frames
