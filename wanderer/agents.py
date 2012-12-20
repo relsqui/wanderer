@@ -135,16 +135,18 @@ class Agent(object):
     def turn(self, direction):
         self.sprite.turn(direction)
 
-    def say(self, message):
+    def say(self, message, font = None):
         "Emit a message as a floating particle."
+        if font is None:
+            font = self.game.font
         offset = -1 * (self.sprite.rect.height/2 + FONT_SIZE/2 + 2)
-        destination = self.sprite.rect.move(0, offset)
-        self.game.all_particles.add(particles.TextParticle(self.game.font, message, destination))
+        location = self.sprite.rect.move(0, offset)
+        self.game.all_particles.add(particles.TextParticle(font, message, location))
 
-    def interject(self, message):
+    def interject(self, message, font = None):
         "Low-priority say(); discard if too frequent."
         if self.interject_ok:
-            self.say(message)
+            self.say(message, font)
             self.interject_ok = False
             timers.Timer(INTERJECT_TIMEOUT, self.reset_interject)
 
@@ -152,7 +154,7 @@ class Agent(object):
         "Internal. Reset interjection timer."
         self.interject_ok = True
 
-    def greet(self):
+    def greet(self, font = None):
         "Interject a random greeting."
         while True:
             greeting = random.choice(GREETINGS)
@@ -160,7 +162,7 @@ class Agent(object):
                 self.last_greetings.pop(0)
                 self.last_greetings.append(greeting)
                 break
-        self.interject(greeting)
+        self.interject(greeting, font)
 
 
 class Player(Agent):
@@ -179,15 +181,17 @@ class Player(Agent):
                     # this gives us time to finish the loop and uncollide
         return sprites
 
-    def greet(self):
-        super(Player, self).greet()
+    def greet(self, font = None):
+        super(Player, self).greet(font)
         audible = pygame.sprite.collide_circle_ratio(2)
         earshot = [npc for npc in self.game.all_npcs if audible(self.sprite, npc.sprite)]
         for npc in earshot:
             npc.greeted()
 
-    def call(self):
-        self.interject(random.choice(CALLS))
+    def call(self, font = None):
+        if font is None:
+            font = self.game.big_font
+        self.interject(random.choice(CALLS), font)
         for npc in self.game.all_npcs:
             npc.pause()
             npc.turn(npc.towards(self.sprite.rect))

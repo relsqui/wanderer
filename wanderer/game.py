@@ -29,9 +29,10 @@ class Game(object):
         self.background = pygame.Surface(self.screen.get_size()).convert()
         print "   - filling background"
         self.background.fill(BACKGROUND_COLOR)
-        print "   - setting font"
+        print "   - setting fonts"
         # freeware font from http://www.04.jp.org/
         self.font = pygame.font.Font(FONT_FILE, FONT_SIZE)
+        self.big_font = pygame.font.Font(FONT_FILE, BIG_FONT_SIZE)
         print "   - setting key repeat"
         pygame.key.set_repeat(KEY_DELAY, KEY_INTERVAL)
         print " * interface"

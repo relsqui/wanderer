@@ -49,11 +49,11 @@ MIN_PAUSE = 1000        # when NPC is called to, how long
 MAX_PAUSE = 4000        # will it stand and look
 
 # Controls
-KEY_DELAY = 50
-KEY_INTERVAL = 10
+KEY_DELAY = 100     # how long before a held key starts sending repeat events
+KEY_INTERVAL = 10   # how quickly a held key sends repeating events
 LEFT_KEYS = (K_h, K_LEFT, K_a)
-RIGHT_KEYS = (K_l, K_RIGHT, K_d)
-UP_KEYS = (K_k, K_UP, K_w)
+RIGHT_KEYS = (K_l, K_RIGHT, K_d)    # these define three control options:
+UP_KEYS = (K_k, K_UP, K_w)          # wasd, hjkl, and arrow keys
 DOWN_KEYS = (K_j, K_DOWN, K_s)
 CONTROLS = (LEFT_KEYS, RIGHT_KEYS, UP_KEYS, DOWN_KEYS)
 
@@ -64,7 +64,8 @@ FADE_AMOUNT = 255/FADE_STEPS
 
 # Text
 FONT_COLOR = (0, 0, 0)
-FONT_SIZE = 8   # point
+FONT_SIZE = 8       # point
+BIG_FONT_SIZE = 16  # point
 FONT_FILE = os.path.join(DATA_DIR, "04B_11__.TTF")
 TEXT_TIMEOUT_PER_CHAR = 110      # milliseconds; this is for particles
 INTERJECT_TIMEOUT = 500          # milliseconds; so is this
