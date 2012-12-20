@@ -192,9 +192,12 @@ class Player(Agent):
         sprites = super(Player, self).colliding_sprites()
         if sprites:
             for sprite in sprites:
-                if isinstance(sprite.agent, Npc) and sprite.agent.is_startleable:
-                    timers.Timer(100, sprite.agent.startled, self)
-                    # this gives us time to finish the loop and uncollide
+                if isinstance(sprite.agent, Npc):
+                    if pygame.key.get_mods() & KMOD_CTRL:
+                        sprite.agent.kill()
+                    elif sprite.agent.is_startleable:
+                        timers.Timer(100, sprite.agent.startled, self)
+                        # this gives us time to finish the loop and uncollide
         return sprites
 
     def walk(self, direction, turn = None):
@@ -247,6 +250,12 @@ class Npc(Agent):
         if self.direction is not None:
             if not self.walk(self.direction):
                 self.direction = OPPOSITE[self.direction]
+
+    def kill(self):
+        "Destroy sprite and remove self from groups."
+        self.sprite.kill()
+        self.game.all_agents.remove(self)
+        self.game.all_npcs.remove(self)
 
     def colliding_sprites(self):
         "Excuse ourselves if we bump into a sprite."

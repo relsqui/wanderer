@@ -41,6 +41,10 @@ class Character(pygame.sprite.Sprite):
         "Update the sprite image."
         self.image = self.animation.image()
 
+    def kill(self):
+        self.animation.stop()
+        super(Character, self).kill()
+
     def turn(self, direction):
         "Changes the orientation of the sprite."
         if self.direction != direction:
