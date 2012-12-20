@@ -10,7 +10,6 @@ DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)
 DIRECTIONS = [DOWN, LEFT, RIGHT, UP]
 OPPOSITE = [UP, RIGHT, LEFT, DOWN]
 if getattr(sys, 'frozen', None):
-    # BASEDIR = os.path.join(os.environ.get("_MEIPASS2", os.path.abspath(".")), "wanderer")
     BASEDIR = sys._MEIPASS
 else:
     BASEDIR = os.path.dirname(__file__)
@@ -30,13 +29,24 @@ CHAR_WIDTH = 96     # pixels
 CHAR_HEIGHT = 136   # pixels
 SHEET_ROWS = 2
 SHEET_COLUMNS = 4
+IMAGE_DIR = os.path.join(DATA_DIR, "images")
+LADY_SPRITES = os.path.join(IMAGE_DIR, "lady_sprites.png")
+
+# Agents
 WALK_RATE = 250     # milliseconds between animation frames
 PLAYER_SPEED = 3    # pixels per tick
 NPC_SPEED = 1       # pixels per tick
-MIN_WANDER = 2000   # milliseconds (for NPC to pause or walk)
-MAX_WANDER = 4000   # milliseconds (for NPC to pause or walk)
-IMAGE_DIR = os.path.join(DATA_DIR, "images")
-LADY_SPRITES = os.path.join(IMAGE_DIR, "lady_sprites.png")
+"The following are all millisecond values controlling random NPC behavior."
+MIN_WANDER = 1500       # when NPC is wandering, how long before it stops
+MAX_WANDER = 6000
+MIN_STAND = 500         # when NPC is standing, how long before it
+MAX_STAND = 2000        # resumes wandering
+MIN_STARTWANDER = 800   # how long before a newly-spawned NPC
+MAX_STARTWANDER = 4000  # begins wandering
+MIN_GREETRESPONSE = 0   # how long before an NPC responds
+MAX_GREETRESPONSE = 500 # to being greeted
+MIN_PAUSE = 1000        # when NPC is called to, how long
+MAX_PAUSE = 4000        # will it stand and look
 
 # Controls
 KEY_DELAY = 50

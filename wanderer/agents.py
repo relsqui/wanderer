@@ -184,7 +184,7 @@ class Player(Agent):
         audible = pygame.sprite.collide_circle_ratio(2)
         earshot = [npc for npc in self.game.all_npcs if audible(self.sprite, npc.sprite)]
         for npc in earshot:
-            timers.Timer(random.randint(0, 500), npc.greet)
+            npc.greeted()
 
     def call(self):
         self.interject(random.choice(CALLS))
@@ -205,7 +205,7 @@ class Npc(Agent):
         self.speed = NPC_SPEED
         self.direction = None
         self.is_startleable = True
-        self.timer = timers.Timer(random.randint(1000, 3000), self.start_wandering)
+        self.timer = timers.Timer(random.randint(MIN_STARTWANDER, MAX_STARTWANDER), self.start_wandering)
 
     def update(self):
         if self.direction is not None:
@@ -225,7 +225,7 @@ class Npc(Agent):
     def stop_wandering(self):
         self.stand()
         self.direction = None
-        self.timer = timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.start_wandering)
+        self.timer = timers.Timer(random.randint(MIN_STAND, MAX_STAND), self.start_wandering)
 
     def startle(self, startler):
         self.is_startleable = False
@@ -234,12 +234,18 @@ class Npc(Agent):
         self.turn(facing)
         self.walk(OPPOSITE[facing], False)
         timers.Timer(100, self.reset_startle)
+        # no random here, because it's just to account for keyrepeat
+
+    def greeted(self):
+        timers.Timer(random.randint(MIN_GREETRESPONSE, MAX_GREETRESPONSE), self.greet)
 
     def reset_startle(self):
         self.stand()
         self.is_startleable = True
 
-    def pause(self, duration = 2500):
+    def pause(self, duration = None):
+        if duration is None:
+            duration = random.randint(MIN_PAUSE, MAX_PAUSE)
         self.direction = None
         self.stand()
         self.timer.cancel()
