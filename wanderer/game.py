@@ -19,23 +19,20 @@ class Game(object):
         print " * pygame"
 
         # Interface
-        print "   - creating window"
         self.window = pygame.display.set_mode(WINDOW_SIZE)
-        print "   - setting caption"
         pygame.display.set_caption(WINDOW_TITLE)
-        print "   - defining screen"
         self.screen = pygame.display.get_surface()
-        print "   - creating background"
         self.background = pygame.Surface(self.screen.get_size()).convert()
-        print "   - filling background"
         self.background.fill(BACKGROUND_COLOR)
-        print "   - setting fonts"
         # freeware font from http://www.04.jp.org/
         self.font = pygame.font.Font(FONT_FILE, FONT_SIZE)
         self.big_font = pygame.font.Font(FONT_FILE, BIG_FONT_SIZE)
-        print "   - setting key repeat"
         pygame.key.set_repeat(KEY_DELAY, KEY_INTERVAL)
         print " * interface"
+
+        # Files
+        self.TEXT = {}
+        self.init_files()
 
         # Sprites and agents
         self.all_particles = particles.ParticleGroup()
@@ -82,6 +79,19 @@ class Game(object):
         self.all_particles.draw(self.screen)
         pygame.display.flip()
         sys.stdout.flush()
+
+    def init_files(self):
+        "Internal. Initialize data files."
+        text_directory = os.path.join(DATA_DIR, "text")
+        text_files = os.listdir(text_directory)
+        for filename in text_files:
+            name, ext = os.path.splitext(filename)
+            self.TEXT[name] = []
+            f = open(os.path.join(text_directory, filename))
+            for line in f:
+                self.TEXT[name].append(line.strip())
+            f.close()
+
 
     def init_controls(self):
         "Internal. Initialize the game controls."

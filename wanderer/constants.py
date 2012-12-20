@@ -69,13 +69,3 @@ BIG_FONT_SIZE = 16  # point
 FONT_FILE = os.path.join(DATA_DIR, "04B_11__.TTF")
 TEXT_TIMEOUT_PER_CHAR = 110      # milliseconds; this is for particles
 INTERJECT_TIMEOUT = 500          # milliseconds; so is this
-text_directory = os.path.join(DATA_DIR, "text")
-text_files = os.listdir(text_directory)
-TEXT = {}
-for filename in text_files:
-    name, ext = os.path.splitext(filename)
-    TEXT[name] = []
-    f = open(os.path.join(text_directory, filename))
-    for line in f:
-        TEXT[name].append(line.strip())
-    f.close()
