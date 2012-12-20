@@ -197,6 +197,15 @@ class Player(Agent):
                     # this gives us time to finish the loop and uncollide
         return sprites
 
+    def walk(self, direction, turn = None):
+        if turn is None:
+            if pygame.key.get_mods() & KMOD_SHIFT:
+                self.turn(OPPOSITE[direction])
+                turn = False
+            else:
+                turn = True
+        super(Player, self).walk(direction, turn)
+
     def greet(self, font = None):
         "Greet nearby NPCs (triggered by a game.Control)"
         super(Player, self).greet(font)

@@ -59,9 +59,6 @@ class Character(pygame.sprite.Sprite):
 
     def walk(self, direction, turn = True):
         "Starts walking animation, optionally facing the given direction."
-        if self.agent == self.agent.game.player and pygame.key.get_mods() & KMOD_SHIFT:
-            turn = False
-            self.turn(OPPOSITE[direction])
         if turn:
             self.turn(direction)
         self.animation.start()
