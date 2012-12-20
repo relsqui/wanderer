@@ -49,7 +49,7 @@ MIN_PAUSE = 1000        # when NPC is called to, how long
 MAX_PAUSE = 4000        # will it stand and look
 
 # Controls
-KEY_DELAY = 100     # how long before a held key starts sending repeat events
+KEY_DELAY = 200     # how long before a held key starts sending repeat events
 KEY_INTERVAL = 10   # how quickly a held key sends repeating events
 LEFT_KEYS = (K_h, K_LEFT, K_a)
 RIGHT_KEYS = (K_l, K_RIGHT, K_d)    # these define three control options:
@@ -69,16 +69,13 @@ BIG_FONT_SIZE = 16  # point
 FONT_FILE = os.path.join(DATA_DIR, "04B_11__.TTF")
 TEXT_TIMEOUT_PER_CHAR = 110      # milliseconds; this is for particles
 INTERJECT_TIMEOUT = 500          # milliseconds; so is this
-GREETINGS = []
-OUCHES = []
-CALLS = []
-files = {}
-files["greetings.txt"] = GREETINGS
-files["ouches.txt"] = OUCHES
-files["calls.txt"] = CALLS
-TEXT_DIR = os.path.join(DATA_DIR, "text")
-for filename, constant in files.items():
-    f = open(os.path.join(TEXT_DIR, filename))
+text_directory = os.path.join(DATA_DIR, "text")
+text_files = os.listdir(text_directory)
+TEXT = {}
+for filename in text_files:
+    name, ext = os.path.splitext(filename)
+    TEXT[name] = []
+    f = open(os.path.join(text_directory, filename))
     for line in f:
-        constant.append(line.strip())
+        TEXT[name].append(line.strip())
     f.close()

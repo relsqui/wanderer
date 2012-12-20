@@ -157,7 +157,7 @@ class Agent(object):
     def greet(self, font = None):
         "Interject a random greeting."
         while True:
-            greeting = random.choice(GREETINGS)
+            greeting = random.choice(TEXT["greetings"])
             if greeting not in self.last_greetings:
                 self.last_greetings.pop(0)
                 self.last_greetings.append(greeting)
@@ -168,7 +168,7 @@ class Agent(object):
 class Player(Agent):
     def colliding_wall(self):
         if super(Player, self).colliding_wall():
-            self.interject(random.choice(OUCHES))
+            self.interject(random.choice(TEXT["ouches"]))
             return True
         return False
 
@@ -191,7 +191,7 @@ class Player(Agent):
     def call(self, font = None):
         if font is None:
             font = self.game.big_font
-        self.interject(random.choice(CALLS), font)
+        self.interject(random.choice(TEXT["calls"]), font)
         for npc in self.game.all_npcs:
             npc.pause()
             npc.turn(npc.towards(self.sprite.rect))
