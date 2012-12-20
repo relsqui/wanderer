@@ -2,12 +2,6 @@ import pygame
 from wanderer.constants import *
 from wanderer import timers
 
-class ParticleGroup(pygame.sprite.Group):
-    "The collection of all active particles."
-    def draw(self, screen):
-        for particle in self.sprites():
-            screen.blit(particle.surface, particle.rect)
-
 class Particle(pygame.sprite.Sprite):
     """
     A temporary sprite which will disappear after a short time. Arguments:
@@ -20,10 +14,10 @@ class Particle(pygame.sprite.Sprite):
 
     def __init__(self, surface, location, timeout = PARTICLE_DEFAULT_TIMEOUT, vector = (0,0), fade = False):
         super(Particle, self).__init__()
-        self.surface = surface
+        self.image = surface
         self.rect = surface.get_rect()
         self.rect.center = location.center
-        self.surface.set_alpha(255)
+        self.image.set_alpha(255)
         self.vector = vector
         if fade:
             fade_time = timeout/FADE_STEPS
@@ -33,7 +27,7 @@ class Particle(pygame.sprite.Sprite):
 
     def fade(self):
         "Internal. Change the particle transparency."
-        self.surface.set_alpha(self.surface.get_alpha() - FADE_AMOUNT)
+        self.image.set_alpha(self.image.get_alpha() - FADE_AMOUNT)
 
     def update(self):
         "Update the particle position."

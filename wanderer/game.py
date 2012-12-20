@@ -36,7 +36,7 @@ class Game(object):
         self.init_files()
 
         # Sprites and agents
-        self.all_particles = particles.ParticleGroup()
+        self.all_particles = pygame.sprite.RenderPlain()
         self.all_sprites = pygame.sprite.RenderPlain()
         self.all_agents = []
         self.all_npcs = []
