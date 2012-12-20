@@ -30,9 +30,11 @@ class Agent(object):
         self.set_sprite(location = location)
 
     def __repr__(self):
+        "Internal. Developer-facing string representation."
         return self.name
 
     def set_sprite(self, spriteno = None, location = None):
+        "Internal. Create a sprite and associate it with this agent."
         if spriteno:
             self.spriteno = spriteno
         else:
@@ -76,6 +78,7 @@ class Agent(object):
         pass
 
     def colliding(self):
+        "Returns boolean answer to 'Is this agent colliding with anything?'"
         if self.colliding_wall():
             return True
         if self.colliding_sprites():
@@ -83,11 +86,13 @@ class Agent(object):
         return False
 
     def colliding_wall(self):
+        "Returns boolean answer to 'Is this agent off the edge of its area?'"
         if self.area.contains(self.sprite.rect):
             return False
         return True
 
     def colliding_sprites(self):
+        "Returns list of sprites this agent is currently colliding with."
         all_other_sprites = self.game.all_sprites.sprites()
         if self.sprite in all_other_sprites:
             # It might not be, if we're just testing a potential position
@@ -98,6 +103,7 @@ class Agent(object):
         return collided_sprites
 
     def towards(self, target):
+        "Returns direction this agent should turn to face the target Rect."
         targetx, targety = target.center
         selfx, selfy = self.sprite.rect.center
         if abs(selfx - targetx) > abs(selfy - targety):
@@ -131,9 +137,11 @@ class Agent(object):
         return True
 
     def stand(self, direction = None):
+        "Wrapper for Character.stand(), which stops walk animation."
         self.sprite.stand()
 
     def turn(self, direction):
+        "Wrapper for Character.turn(), which changes sprite orientation."
         self.sprite.turn(direction)
 
     def say(self, message, font = None):
@@ -167,13 +175,20 @@ class Agent(object):
 
 
 class Player(Agent):
+    """
+    A type of Agent (see its arguments) to be controlled by a player.
+    Contains callables for game.Control and collision responses.
+    """
+
     def colliding_wall(self):
+        "If we're out of bounds, complain about the wall bump."
         if super(Player, self).colliding_wall():
             self.interject(random.choice(self.TEXT["ouches"]))
             return True
         return False
 
     def colliding_sprites(self):
+        "If we hit a sprite, startle its agent."
         sprites = super(Player, self).colliding_sprites()
         if sprites:
             for sprite in sprites:
@@ -183,6 +198,7 @@ class Player(Agent):
         return sprites
 
     def greet(self, font = None):
+        "Greet nearby NPCs (triggered by a game.Control)"
         super(Player, self).greet(font)
         audible = pygame.sprite.collide_circle_ratio(2)
         earshot = [npc for npc in self.game.all_npcs if audible(self.sprite, npc.sprite)]
@@ -190,6 +206,7 @@ class Player(Agent):
             npc.greeted()
 
     def call(self, font = None):
+        "Call out to all NPCs (triggered by a game.Control)"
         if font is None:
             font = self.game.big_font
         self.interject(random.choice(self.TEXT["calls"]), font)
@@ -198,6 +215,11 @@ class Player(Agent):
 
 
 class Npc(Agent):
+    """
+    A type of Agent (see its arguments) which is computer-controlled.
+    Wanders randomly and responds to collisions and player actions.
+    """
+
     def __init__(self, *args):
         super(Npc, self).__init__(*args)
         if len(self.game.all_agents) < 8:
@@ -212,33 +234,40 @@ class Npc(Agent):
         self.timer = timers.Timer(random.randint(MIN_STARTWANDER, MAX_STARTWANDER), self.start_wandering)
 
     def update(self):
+        "If we're currently wandering, step; if we hit something, turn around."
         if self.direction is not None:
             if not self.walk(self.direction):
                 self.direction = OPPOSITE[self.direction]
 
     def colliding_sprites(self):
+        "Excuse ourselves if we bump into a sprite."
         sprites = super(Npc, self).colliding_sprites()
         if sprites:
             self.interject("Pardon me.")
         return sprites
 
     def start_wandering(self):
+        "Pick a random direction, walk for a while, then trigger stop."
         self.direction = random.choice(DIRECTIONS)
         self.timer = timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.stop_wandering)
 
     def stop_wandering(self):
+        "Stop, stand for a while, then trigger wandering."
         self.stand()
         self.direction = None
         self.timer = timers.Timer(random.randint(MIN_STAND, MAX_STAND), self.start_wandering)
 
     def greeted(self):
+        "Respond to a greeting from the player."
         timers.Timer(random.randint(MIN_GREETRESPONSE, MAX_GREETRESPONSE), self.greet)
 
     def called(self, caller):
+        "Respond to the player calling out."
         self.pause()
         self.turn(self.towards(caller.sprite.rect))
 
     def startled(self, startler):
+        "Respond to the player bumping into us."
         self.is_startleable = False
         self.pause()
         facing = self.towards(startler.sprite.rect)
@@ -248,10 +277,12 @@ class Npc(Agent):
         # no random here, because it's just to account for keyrepeat
 
     def reset_startled(self):
+        "Internal. Reset the startle timer."
         self.stand()
         self.is_startleable = True
 
     def pause(self, duration = None):
+        "Stop the wander cycle for a random time and optionally face a direction."
         if duration is None:
             duration = random.randint(MIN_PAUSE, MAX_PAUSE)
         self.direction = None

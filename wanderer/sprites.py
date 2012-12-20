@@ -24,6 +24,7 @@ class Character(pygame.sprite.Sprite):
         self.update()
 
     def __repr__(self):
+        "Developer-facing string representation."
         return "{}'s sprite".format(self.agent)
 
     def init_images(self):

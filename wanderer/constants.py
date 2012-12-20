@@ -1,9 +1,9 @@
-import os, sys
-from pygame.locals import *
-
 """
 Various constants for use in other modules.
 """
+
+import os, sys
+from pygame.locals import *
 
 # General
 DOWN, LEFT, RIGHT, UP = (0, 1, 2, 3)

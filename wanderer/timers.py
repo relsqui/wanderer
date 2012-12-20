@@ -16,12 +16,14 @@ class Timer(object):
         all_timers.append(self)
 
     def update(self, loop_time):
+        "Decrement the counter; if it runs out, fire the action and self-destruct."
         self.counter -= loop_time
         if self.counter <= 0:
             self.action(*self.arguments)
             all_timers.remove(self)
 
     def cancel(self):
+        "Destroy the timer without firing the action."
         if self in all_timers:
             all_timers.remove(self)
 

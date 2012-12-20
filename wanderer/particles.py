@@ -3,6 +3,7 @@ from wanderer.constants import *
 from wanderer import timers
 
 class ParticleGroup(pygame.sprite.Group):
+    "The collection of all active particles."
     def draw(self, screen):
         for particle in self.sprites():
             screen.blit(particle.surface, particle.rect)
