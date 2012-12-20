@@ -42,8 +42,6 @@ class Game(object):
         self.all_agents = []
         self.all_npcs = []
         self.player = agents.Player(self, "Player")
-        # agents.Npc(self, "Freddie")
-        agents.Npc(self, "Ginger")
         print " * agents"
 
         # Miscellany
@@ -112,6 +110,9 @@ class Game(object):
         controls.append(Control([KEYDOWN], [K_6], self.player.set_sprite, 6))
         controls.append(Control([KEYDOWN], [K_7], self.player.set_sprite, 7))
         controls.append(Control([KEYDOWN], [K_8], self.player.set_sprite, 8))
+
+        # NPCs
+        controls.append(Control([KEYDOWN], [K_n], agents.Npc, self))
 
         for control in controls:
             for event in control.events:
