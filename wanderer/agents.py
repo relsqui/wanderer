@@ -178,7 +178,7 @@ class Player(Agent):
         if sprites:
             for sprite in sprites:
                 if isinstance(sprite.agent, Npc) and sprite.agent.is_startleable:
-                    timers.Timer(100, sprite.agent.startle, self)
+                    timers.Timer(100, sprite.agent.startled, self)
                     # this gives us time to finish the loop and uncollide
         return sprites
 
@@ -194,8 +194,7 @@ class Player(Agent):
             font = self.game.big_font
         self.interject(random.choice(self.TEXT["calls"]), font)
         for npc in self.game.all_npcs:
-            npc.pause()
-            npc.turn(npc.towards(self.sprite.rect))
+            npc.called(self)
 
 
 class Npc(Agent):
@@ -232,19 +231,23 @@ class Npc(Agent):
         self.direction = None
         self.timer = timers.Timer(random.randint(MIN_STAND, MAX_STAND), self.start_wandering)
 
-    def startle(self, startler):
+    def greeted(self):
+        timers.Timer(random.randint(MIN_GREETRESPONSE, MAX_GREETRESPONSE), self.greet)
+
+    def called(self, caller):
+        self.pause()
+        self.turn(self.towards(caller.sprite.rect))
+
+    def startled(self, startler):
         self.is_startleable = False
         self.pause()
         facing = self.towards(startler.sprite.rect)
         self.turn(facing)
         self.walk(OPPOSITE[facing], False)
-        timers.Timer(100, self.reset_startle)
+        timers.Timer(100, self.reset_startled)
         # no random here, because it's just to account for keyrepeat
 
-    def greeted(self):
-        timers.Timer(random.randint(MIN_GREETRESPONSE, MAX_GREETRESPONSE), self.greet)
-
-    def reset_startle(self):
+    def reset_startled(self):
         self.stand()
         self.is_startleable = True
 
