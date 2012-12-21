@@ -279,7 +279,7 @@ class Npc(Agent):
         "Excuse ourselves if we bump into a sprite."
         sprites = super(Npc, self).colliding_sprites()
         if sprites:
-            self.interject("Pardon me.")
+            self.interject(random.choice(self.TEXT["polite"]))
         return sprites
 
     def start_wandering(self):
