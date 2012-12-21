@@ -9,6 +9,22 @@ class Game(object):
     No arguments.
     """
 
+    FONT_SIZE = 8       # point
+    BIG_FONT_SIZE = 16  # point
+    # color setting is in particles.TextParticle
+
+    WINDOW_HEIGHT = 250 # pixels
+    WINDOW_WIDTH = 300  # pixels (starting)
+    WINDOW_TITLE = "Wanderer"
+    BACKGROUND_COLOR = (50, 200, 70)
+
+    KEY_DELAY = 200     # ms before keys start repeating
+    KEY_INTERVAL = 10   # ms between key repeats
+    LEFT_KEYS = (K_h, K_LEFT, K_a)
+    RIGHT_KEYS = (K_l, K_RIGHT, K_d)    # these define three control options:
+    UP_KEYS = (K_k, K_UP, K_w)          # wasd, hjkl, and arrow keys
+    DOWN_KEYS = (K_j, K_DOWN, K_s)
+
     def __init__(self):
         print "Welcome! Initializing game ..."
         super(Game, self).__init__()
@@ -16,19 +32,27 @@ class Game(object):
         if not pygame.font:
             print "Couldn't load pygame.font!"
             sys.exit(1)
+
+        if getattr(sys, 'frozen', None):
+            BASEDIR = sys._MEIPASS
+        else:
+            BASEDIR = os.path.dirname(__file__)
+        self.data_dir = os.path.join(BASEDIR, "data")
+
         print " * pygame"
 
         # Interface
-        self.window = pygame.display.set_mode(WINDOW_SIZE)
-        pygame.display.set_caption(WINDOW_TITLE)
+        self.window = pygame.display.set_mode((self.WINDOW_WIDTH, self.WINDOW_HEIGHT))
+        pygame.display.set_caption(self.WINDOW_TITLE)
         self.screen = pygame.display.get_surface()
         self.background = pygame.Surface(self.screen.get_size()).convert()
-        self.background.fill(BACKGROUND_COLOR)
+        self.background.fill(self.BACKGROUND_COLOR)
         self.screen.blit(self.background, (0,0))
         # freeware font from http://www.04.jp.org/
-        self.font = pygame.font.Font(FONT_FILE, FONT_SIZE)
-        self.big_font = pygame.font.Font(FONT_FILE, BIG_FONT_SIZE)
-        pygame.key.set_repeat(KEY_DELAY, KEY_INTERVAL)
+        font_file = os.path.join(self.data_dir, "04B_11__.TTF")
+        self.font = pygame.font.Font(font_file, self.FONT_SIZE)
+        self.big_font = pygame.font.Font(font_file, self.BIG_FONT_SIZE)
+        pygame.key.set_repeat(self.KEY_DELAY, self.KEY_INTERVAL)
         print " * interface"
 
         # Files
@@ -85,7 +109,7 @@ class Game(object):
 
     def init_files(self):
         "Internal. Initialize data files."
-        text_directory = os.path.join(DATA_DIR, "text")
+        text_directory = os.path.join(self.data_dir, "text")
         text_files = os.listdir(text_directory)
         for filename in text_files:
             name, ext = os.path.splitext(filename)
@@ -94,7 +118,7 @@ class Game(object):
             for line in f:
                 self.TEXT[name].append(line.strip())
             f.close()
-        image_directory = os.path.join(DATA_DIR, "images")
+        image_directory = os.path.join(self.data_dir, "images")
         self.SPRITES = os.path.join(image_directory, "lady_sprites.png")
 
     def init_controls(self):
@@ -110,11 +134,11 @@ class Game(object):
         controls.append(Control([KEYDOWN], [K_c], self.player.call))
 
         # Movement
-        controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.walk, LEFT))
-        controls.append(Control([KEYDOWN], RIGHT_KEYS, self.player.walk, RIGHT))
-        controls.append(Control([KEYDOWN], UP_KEYS, self.player.walk, UP))
-        controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.walk, DOWN))
-        controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.stand))
+        controls.append(Control([KEYDOWN], self.LEFT_KEYS, self.player.walk, LEFT))
+        controls.append(Control([KEYDOWN], self.RIGHT_KEYS, self.player.walk, RIGHT))
+        controls.append(Control([KEYDOWN], self.UP_KEYS, self.player.walk, UP))
+        controls.append(Control([KEYDOWN], self.DOWN_KEYS, self.player.walk, DOWN))
+        controls.append(Control([KEYUP], self.LEFT_KEYS + self.RIGHT_KEYS + self.UP_KEYS + self.DOWN_KEYS, self.player.stand))
 
         # Appearance
         controls.append(Control([KEYDOWN], [K_1], self.player.set_sprite, 1))

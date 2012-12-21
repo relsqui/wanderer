@@ -13,6 +13,9 @@ class Character(pygame.sprite.DirtySprite):
 
     The sprite sheet will be chopped up and animated according to various layouts specs in the constants module.
     """
+
+    WALK_RATE = 250     # milliseconds between animation frames
+
     def __init__(self, agent, sheet, location, direction = DOWN):
         super(Character, self).__init__()
         self.agent = agent
@@ -38,7 +41,7 @@ class Character(pygame.sprite.DirtySprite):
                 cursor = pygame.Rect(position * SPRITE_WIDTH, direction * SPRITE_HEIGHT, SPRITE_WIDTH, SPRITE_HEIGHT)
                 frames.append(self.sheet.subsurface(cursor))
             frames.append(frames[1])
-            self.animations.append(Animation(frames, WALK_RATE))
+            self.animations.append(Animation(frames, self.WALK_RATE))
 
     def update(self):
         "Update the sprite image."

@@ -11,13 +11,20 @@ class Agent(object):
         location        (optional: (x, y) location to center sprite on)
     """
 
+    INTERJECT_TIMEOUT = 500     # milliseconds
+    SPEED = 3                   # pixels per tick
+    CHAR_WIDTH = 96             # pixels
+    CHAR_HEIGHT = 136           # pixels
+    SHEET_ROWS = 2
+    SHEET_COLUMNS = 4
+
     def __init__(self, game, name = "Anonymous Agent", spriteno = None, location = None):
         super(Agent, self).__init__()
         self.game = game
         self.TEXT = self.game.TEXT
         self.game.all_agents.append(self)
         self.name = name
-        self.speed = PLAYER_SPEED
+        self.speed = self.SPEED
 
         self.last_greetings = [None for x in xrange(5)]
         self.interject_ok = True
@@ -44,11 +51,11 @@ class Agent(object):
                 self.spriteno = random.randint(1, 8)
                 spriteno = self.spriteno
         spriteno = self.spriteno - 1
-        column = spriteno % SHEET_COLUMNS
-        row = spriteno / SHEET_COLUMNS
-        charx = column * CHAR_WIDTH
-        chary = row * CHAR_HEIGHT
-        char_cursor = pygame.Rect(charx, chary, CHAR_WIDTH, CHAR_HEIGHT)
+        column = spriteno % self.SHEET_COLUMNS
+        row = spriteno / self.SHEET_COLUMNS
+        charx = column * self.CHAR_WIDTH
+        chary = row * self.CHAR_HEIGHT
+        char_cursor = pygame.Rect(charx, chary, self.CHAR_WIDTH, self.CHAR_HEIGHT)
         sprite_sheet = pygame.image.load(self.game.SPRITES).convert()
         char_sheet = sprite_sheet.subsurface(char_cursor)
         if hasattr(self, "sprite"):
@@ -147,7 +154,7 @@ class Agent(object):
         "Emit a message as a floating particle."
         if font is None:
             font = self.game.font
-        offset = -1 * (self.sprite.rect.height/2 + FONT_SIZE/2 + 2)
+        offset = -1 * (self.sprite.rect.height/2 + self.game.FONT_SIZE/2 + 2)
         location = self.sprite.rect.move(0, offset)
         self.game.all_particles.add(particles.TextParticle(font, message, location))
 
@@ -156,7 +163,7 @@ class Agent(object):
         if self.interject_ok:
             self.say(message, font)
             self.interject_ok = False
-            timers.Timer(INTERJECT_TIMEOUT, self.reset_interject)
+            timers.Timer(self.INTERJECT_TIMEOUT, self.reset_interject)
 
     def reset_interject(self):
         "Internal. Reset interjection timer."
@@ -231,6 +238,18 @@ class Npc(Agent):
     Wanders randomly and responds to collisions and player actions.
     """
 
+    MIN_WANDER = 1500       # when NPC is wandering, how long before it stops
+    MAX_WANDER = 6000
+    MIN_STAND = 500         # when NPC is standing, how long before it
+    MAX_STAND = 2000        # resumes wandering
+    MIN_STARTWANDER = 800   # how long before a newly-spawned NPC
+    MAX_STARTWANDER = 4000  # begins wandering
+    MIN_GREETRESPONSE = 0   # how long before an NPC responds
+    MAX_GREETRESPONSE = 500 # to being greeted
+    MIN_PAUSE = 1000        # when NPC is called to, how long
+    MAX_PAUSE = 4000        # will it stand and look
+    SPEED = 1               # pixels per tick
+
     def __init__(self, *args):
         super(Npc, self).__init__(*args)
         if len(self.game.all_agents) < 8:
@@ -239,10 +258,10 @@ class Npc(Agent):
                 self.spriteno = None
                 self.set_sprite()
         self.game.all_npcs.append(self)
-        self.speed = NPC_SPEED
+        self.speed = self.SPEED
         self.direction = None
         self.is_startleable = True
-        self.timer = timers.Timer(random.randint(MIN_STARTWANDER, MAX_STARTWANDER), self.start_wandering)
+        self.timer = timers.Timer(random.randint(self.MIN_STARTWANDER, self.MAX_STARTWANDER), self.start_wandering)
 
     def update(self):
         "If we're currently wandering, step; if we hit something, turn around."
@@ -265,18 +284,18 @@ class Npc(Agent):
 
     def start_wandering(self):
         "Pick a random direction, walk for a while, then trigger stop."
-        self.direction = random.choice(DIRECTIONS)
-        self.timer = timers.Timer(random.randint(MIN_WANDER, MAX_WANDER), self.stop_wandering)
+        self.direction = random.choice([UP, DOWN, LEFT, RIGHT])
+        self.timer = timers.Timer(random.randint(self.MIN_WANDER, self.MAX_WANDER), self.stop_wandering)
 
     def stop_wandering(self):
         "Stop, stand for a while, then trigger wandering."
         self.stand()
         self.direction = None
-        self.timer = timers.Timer(random.randint(MIN_STAND, MAX_STAND), self.start_wandering)
+        self.timer = timers.Timer(random.randint(self.MIN_STAND, self.MAX_STAND), self.start_wandering)
 
     def greeted(self):
         "Respond to a greeting from the player."
-        timers.Timer(random.randint(MIN_GREETRESPONSE, MAX_GREETRESPONSE), self.greet)
+        timers.Timer(random.randint(self.MIN_GREETRESPONSE, self.MAX_GREETRESPONSE), self.greet)
 
     def called(self, caller):
         "Respond to the player calling out."
@@ -301,7 +320,7 @@ class Npc(Agent):
     def pause(self, duration = None):
         "Stop the wander cycle for a random time and optionally face a direction."
         if duration is None:
-            duration = random.randint(MIN_PAUSE, MAX_PAUSE)
+            duration = random.randint(self.MIN_PAUSE, self.MAX_PAUSE)
         self.direction = None
         self.stand()
         self.timer.cancel()
