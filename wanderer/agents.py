@@ -261,6 +261,7 @@ class Npc(Agent):
         self.speed = self.SPEED
         self.direction = None
         self.is_startleable = True
+        self.greet()
         self.timer = timers.Timer(random.randint(self.MIN_STARTWANDER, self.MAX_STARTWANDER), self.start_wandering)
 
     def update(self):
