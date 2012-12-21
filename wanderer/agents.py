@@ -71,7 +71,6 @@ class Agent(object):
                 else:
                     self.sprite.kill()
             self.interject_ok = old_iok
-        self.game.all_sprites.add(self.sprite)
 
     def update(self):
         "Placeholder for overriding."

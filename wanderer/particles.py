@@ -2,7 +2,7 @@ import pygame
 from wanderer.constants import *
 from wanderer import timers
 
-class Particle(pygame.sprite.Sprite):
+class Particle(pygame.sprite.DirtySprite):
     """
     A temporary sprite which will disappear after a short time. Arguments:
         surface     (pygames.Surface, particle contents)
@@ -18,6 +18,7 @@ class Particle(pygame.sprite.Sprite):
         self.rect = surface.get_rect()
         self.rect.center = location.center
         self.image.set_alpha(255)
+        self.dirty = 1
         self.vector = vector
         if fade:
             fade_time = timeout/FADE_STEPS

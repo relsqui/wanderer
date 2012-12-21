@@ -1,8 +1,9 @@
 import pygame, os, random
-from wanderer import particles, timers
+from wanderer import timers
 from wanderer.constants import *
 
-class Character(pygame.sprite.Sprite):
+
+class Character(pygame.sprite.DirtySprite):
     """
     Animated character sprite. Arguments:
         agent           (agents.Agent this sprite belongs to)
@@ -21,7 +22,9 @@ class Character(pygame.sprite.Sprite):
         self.rect = location
         self.direction = direction
         self.animation = self.animations[self.direction]
+        self.agent.game.all_sprites.add(self)
         self.update()
+        self.dirty = 1
 
     def __repr__(self):
         "Developer-facing string representation."

@@ -24,6 +24,7 @@ class Game(object):
         self.screen = pygame.display.get_surface()
         self.background = pygame.Surface(self.screen.get_size()).convert()
         self.background.fill(BACKGROUND_COLOR)
+        self.screen.blit(self.background, (0,0))
         # freeware font from http://www.04.jp.org/
         self.font = pygame.font.Font(FONT_FILE, FONT_SIZE)
         self.big_font = pygame.font.Font(FONT_FILE, BIG_FONT_SIZE)
@@ -36,8 +37,8 @@ class Game(object):
         self.init_files()
 
         # Sprites and agents
-        self.all_particles = pygame.sprite.RenderPlain()
-        self.all_sprites = pygame.sprite.RenderPlain()
+        self.all_particles = pygame.sprite.RenderUpdates()
+        self.all_sprites = pygame.sprite.RenderUpdates()
         self.all_agents = []
         self.all_npcs = []
         self.player = agents.Player(self, "Player")
@@ -75,7 +76,8 @@ class Game(object):
         for timer in timers.all_timers:
             timer.update(loop_time)
 
-        self.screen.blit(self.background, (0,0))
+        self.all_sprites.clear(self.screen, self.background)
+        self.all_particles.clear(self.screen, self.background)
         self.all_sprites.draw(self.screen)
         self.all_particles.draw(self.screen)
         pygame.display.flip()
