@@ -1,4 +1,5 @@
 import pygame, sys, random
+from pytmx import tmxloader
 from wanderer.constants import *
 from wanderer import agents, sprites, particles, timers
 
@@ -13,10 +14,9 @@ class Game(object):
     BIG_FONT_SIZE = 16  # point
     # color setting is in particles.TextParticle
 
-    WINDOW_HEIGHT = 250 # pixels
-    WINDOW_WIDTH = 300  # pixels (starting)
+    WINDOW_HEIGHT = 640 # pixels (starting)
+    WINDOW_WIDTH = 640  # pixels (starting)
     WINDOW_TITLE = "Wanderer"
-    BACKGROUND_COLOR = (50, 200, 70)
 
     KEY_DELAY = 200     # ms before keys start repeating
     KEY_INTERVAL = 10   # ms between key repeats
@@ -32,6 +32,7 @@ class Game(object):
         if not pygame.font:
             print "Couldn't load pygame.font!"
             sys.exit(1)
+        print " * pygame"
 
         if getattr(sys, 'frozen', None):
             BASEDIR = sys._MEIPASS
@@ -39,21 +40,35 @@ class Game(object):
             BASEDIR = os.path.dirname(__file__)
         self.data_dir = os.path.join(BASEDIR, "data")
 
-        print " * pygame"
-
         # Interface
         self.window = pygame.display.set_mode((self.WINDOW_WIDTH, self.WINDOW_HEIGHT))
         pygame.display.set_caption(self.WINDOW_TITLE)
         self.screen = pygame.display.get_surface()
-        self.background = pygame.Surface(self.screen.get_size()).convert()
-        self.background.fill(self.BACKGROUND_COLOR)
-        self.screen.blit(self.background, (0,0))
-        # freeware font from http://www.04.jp.org/
+        pygame.key.set_repeat(self.KEY_DELAY, self.KEY_INTERVAL)
+
+        # Font. Freeware font from http://www.04.jp.org/
         font_file = os.path.join(self.data_dir, "04B_11__.TTF")
         self.font = pygame.font.Font(font_file, self.FONT_SIZE)
         self.big_font = pygame.font.Font(font_file, self.BIG_FONT_SIZE)
-        pygame.key.set_repeat(self.KEY_DELAY, self.KEY_INTERVAL)
         print " * interface"
+
+        from pytmx import tmxloader
+        maps_directory = os.path.join(self.data_dir, "maps")
+        map_data = tmxloader.load_pygame(os.path.join(maps_directory, "island.tmx"))
+        self.map_data = map_data
+        map_width = map_data.tilewidth * map_data.width
+        map_height = map_data.tileheight * map_data.height
+        self.map = pygame.Surface((map_width, map_height))
+        def tpos(x, y):
+            return (x * map_data.tilewidth, y * map_data.tileheight)
+        for l in xrange(len(map_data.tilelayers)):
+            for y in xrange(map_data.height):
+                for x in xrange(map_data.width):
+                    tile = map_data.getTileImage(x, y, l)
+                    if tile:
+                        self.map.blit(tile, tpos(x, y))
+        self.screen.blit(self.map, (0,0))
+        print " * map"
 
         # Files
         self.TEXT = {}
@@ -100,8 +115,8 @@ class Game(object):
         for timer in timers.all_timers:
             timer.update(loop_time)
 
-        self.all_sprites.clear(self.screen, self.background)
-        self.all_particles.clear(self.screen, self.background)
+        self.all_sprites.clear(self.screen, self.map)
+        self.all_particles.clear(self.screen, self.map)
         self.all_sprites.draw(self.screen)
         self.all_particles.draw(self.screen)
         pygame.display.flip()

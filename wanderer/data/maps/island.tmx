@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="20" height="20" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" source="terrain_atlas.tsx"/>
+ <layer name="Water" width="20" height="20">
+  <data encoding="base64" compression="zlib">
+   eJzrYGRg6BjFo3gUj+JRPIpJxADKEtYR
+  </data>
+ </layer>
+ <layer name="Dirt" width="20" height="20">
+  <data encoding="base64" compression="zlib">
+   eJzVlF0KwCAMg3tlb2Y94V4shCxT64QxoSjFfqTxx+y/o1Cc4rQXTGREeI+s3tLrKjHVepWHdS54mJsxlV+Yq5s8rIl1tl/UofpkHzL+sV/c5yrPRF8jvRmNbvezUXdnxUfUhHX+kB+x8G5wv0pz9pyVZ432zngOMzLiHe78OVx38u/6clyEK2dR
+  </data>
+ </layer>
+ <layer name="Grass" width="20" height="20">
+  <data encoding="base64" compression="zlib">
+   eJxjYBi6oBwNU8scSswlZBYp5uJSTy/zCJlJil/JNY8YOVLchk8NIUBt8wjpoUYc0yJOyDWPHLMGQxok1yxSzCUXUKKXGgAARFhOkA==
+  </data>
+ </layer>
+ <layer name="Grass Features" width="20" height="20">
+  <data encoding="base64" compression="zlib">
+   eJy9k40JAjEMhdtpPCdwBHWS0wXUDaSTnC5wOp4VLDwfeTFV8EHhSJrv8teU/qMhp3Shs8zfc65G7NTJHQTnDt/rHOM21qmjprNzt+T3PFiH6l/VM4NtcnIsYH9yb+RX/1I5FrJbzCbM0eKpOXzSWGO2RlyhvihxzarWTbXvyadqRXnzsJie2l5FZ9yjyEywV9hba48sHs/k13di9e/oMBfgi+w074Z6H2oHW4674JzH113FUtwZYvFEOIrbE/sACwQwpg==
+  </data>
+ </layer>
+ <layer name="Dirt Patch Edges" width="20" height="20">
+  <data encoding="base64" compression="zlib">
+   eJxjYBgFQwVcA+LrVDTvGxB/p6J5tADiQCxBRfMqgDiMkYHhBpXMs2CE0GVUMs8ciMWBZv6gknmjYBTQEgAAbqYHZw==
+  </data>
+ </layer>
+</map>
