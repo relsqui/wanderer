@@ -1,4 +1,4 @@
-import pygame, sys, random
+import pygame, sys, random, numpy
 from pytmx import tmxloader
 from wanderer.constants import *
 from wanderer import agents, sprites, particles, timers
@@ -206,6 +206,9 @@ class Map(object):
                     tile = self.data.getTileImage(x, y, l)
                     if tile:
                         self.surface.blit(tile, self.tile2px(x, y))
+        color_key = self.data.tilesets[0].trans
+        self.color_key = tuple(ord(c) for c in color_key.decode('hex'))
+        self.tile_masks = {}
 
     def walkable_rect(self, position):
         "Takes a pygame.Rect, returns True iff all corners are on walkable tiles."
@@ -215,39 +218,87 @@ class Map(object):
         return True
 
     def walkable_coords(self, x, y):
-        """
-        Given x, y pixel coordinates, returns:
-            False if there are no tiles under those coordinates
-            False if the topmost tile present is set to nowalk
-            True otherwise, i.e. there are tiles and the topmost is walkable
-        """
-        walkable = True
-        for gid in self.tiles_under(x, y):
-            if gid:
-                # there's a tile present
-                try:
-                    properties = self.data.tile_properties[gid]
-                    if properties["nowalk"]:
-                        walkable = False
-                except KeyError:
-                    # it has no properties
-                    walkable = True
-        return walkable
+        "Returns True if the pixel at the coordinates given is walkable, False otherwise."
+        tile, remainder = self.px2tile_remainder(x, y)
+        mask = self.get_tile_mask(x, y)
+        pixel = mask.get_at(remainder)[0:3]
+        if pixel == self.color_key:
+            return False
+        else:
+            return True
+
+    def walkable_mask(self, sprite):
+        "Takes a sprite (with .image and .rect attributes), and returns True unless any non-alpha part of that sprite is on top of any visible part of a nowalk tile."
+        sprite_corners = [sprite.rect.topleft, sprite.rect.topright, sprite.rect.bottomleft, sprite.rect.bottomright]
+        # this is WRONG. sprites are tall enough that the top and bottom
+        # tile they're covering might not be adjacent.
+        flat_corners = []
+        for corner in sprite_corners:
+            corner_mask = self.get_tile_mask(*corner)
+
+    def get_tile_mask(self, px_x, px_y):
+        "Returns a pygame.Surface whose colorkey transparency values match the walkable status of the terrain at the given tile location."
+        x, y = self.px2tile(px_x, px_y)
+        if self.tile_masks.has_key((x, y)):
+            tile_mask = self.tile_masks[(x, y)]
+        else:
+            color_key = self.color_key
+            if color_key == (0, 0, 0):
+                new_color_key = (255, 255, 255)
+            else:
+                new_color_key = (0, 0, 0)
+            tile_mask = pygame.Surface((self.data.tilewidth, self.data.tileheight))
+            for tile in self.tiles_under(px_x, px_y):
+                if tile:
+                    if self.tile_is_nowalk(tile):
+                        tile_mask.fill(color_key)
+                    else:
+                        tile_mask.blit(self.data.images[tile], (0, 0))
+            mask_array = pygame.surfarray.pixels2d(tile_mask)
+            key_array = numpy.array(color_key)
+            def key_replace(pixel):
+                if numpy.equal(pixel, key_array).all():
+                    return new_color_key
+                else:
+                    return color_key
+                # vectorize will make the return values into arrays
+            vector_kr = numpy.vectorize(key_replace)
+            mask_array = vector_kr(mask_array)
+            self.tile_masks[(x, y)] = tile_mask
+        return tile_mask
+
+    def tile_is_nowalk(self, gid):
+        "Returns True if the given tile GID is set nowalk, False otherwise."
+        nowalk = False
+        try:
+            properties = self.data.tile_properties[gid]
+            if properties["nowalk"]:
+                nowalk = True
+        except KeyError:
+            # no properties for that tile
+            pass
+        return nowalk
 
     def tiles_under(self, x, y):
+        "Returns a list of tiles under the coordinates given, from bottom layer to top."
         x, y = self.px2tile(x, y)
         tiles = []
         for layer in self.data.tilelayers:
             tiles.append(layer.data[y][x])
         return tiles
 
-    def walkable_mask(self, image):
-        pass
-
     def px2tile(self, x, y):
-        "Converts an x, y position from real (pixel) position to tile location."
+        "Converts an x, y position from real (pixel) position to tile location, losing precision."
         return (x / self.data.tilewidth, y / self.data.tileheight)
 
+    def px2tile_remainder(self, px_x, px_y):
+        "Converts an x, y real (pixel) position to tile location and pixel location within the tile."
+        x = px_x / self.data.tilewidth
+        y = px_y / self.data.tileheight
+        rem_x = px_x - (x * self.data.tilewidth)
+        rem_y = px_y - (y * self.data.tileheight)
+        return ((x, y), (rem_x, rem_y))
+
     def tile2px(self, x, y):
-        "Converts an x, y position from tile location to real (pixel) position."
+        "Converts an x, y position from tile location to real (pixel) position of the tile's (0, 0)."
         return (x * self.data.tilewidth, y * self.data.tileheight)
