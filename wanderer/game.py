@@ -194,7 +194,7 @@ class Control(object):
 
 
 class Map(object):
-    "Stores data about the map. Initialize with the name of a map to load."
+    "Stores data about the map. Initialize with the location of a map to load."
 
     def __init__(self, map_location):
         self.data = tmxloader.load_pygame(map_location)
@@ -215,10 +215,14 @@ class Map(object):
         return True
 
     def walkable_coords(self, x, y):
+        """
+        Given x, y pixel coordinates, returns:
+            False if there are no tiles under those coordinates
+            False if the topmost tile present is set to nowalk
+            True otherwise, i.e. there are tiles and the topmost is walkable
+        """
         walkable = True
-        x, y = self.px2tile(x, y)
-        for layer in self.data.tilelayers:
-            gid = layer.data[y][x]
+        for gid in self.tiles_under(x, y):
             if gid:
                 # there's a tile present
                 try:
@@ -229,6 +233,16 @@ class Map(object):
                     # it has no properties
                     walkable = True
         return walkable
+
+    def tiles_under(self, x, y):
+        x, y = self.px2tile(x, y)
+        tiles = []
+        for layer in self.data.tilelayers:
+            tiles.append(layer.data[y][x])
+        return tiles
+
+    def walkable_mask(self, image):
+        pass
 
     def px2tile(self, x, y):
         "Converts an x, y position from real (pixel) position to tile location."
