@@ -94,20 +94,11 @@ class Agent(object):
         return False
 
     def colliding_tile(self):
-        "Returns boolean answer to 'Is this agent standing on a nowalk tile?'"
-        map_data = self.game.map_data
-        x = self.sprite.rect.centerx / map_data.tilewidth
-        y = self.sprite.rect.centery / map_data.tileheight
-        nowalk = False
-        for l in xrange(len(map_data.tilelayers)):
-            layertile = map_data.getTileProperties((x, y, l))
-            if layertile and layertile["nowalk"]:
-                # the tile on this layer is set nowalk
-                nowalk = True
-            elif map_data.getTileGID(x, y, l):
-                # there's a tile, not set nowalk
-                nowalk = False
-        return nowalk
+        "Returns boolean answer to 'Is this agent centered on a nowalk tile?'"
+        if self.game.map.walkable_coords(*self.sprite.rect.center):
+            return False
+        else:
+            return True
 
     def colliding_wall(self):
         "Returns boolean answer to 'Is this agent off the edge of its area?'"

@@ -52,22 +52,9 @@ class Game(object):
         self.big_font = pygame.font.Font(font_file, self.BIG_FONT_SIZE)
         print " * interface"
 
-        from pytmx import tmxloader
-        maps_directory = os.path.join(self.data_dir, "maps")
-        map_data = tmxloader.load_pygame(os.path.join(maps_directory, "island.tmx"))
-        self.map_data = map_data
-        map_width = map_data.tilewidth * map_data.width
-        map_height = map_data.tileheight * map_data.height
-        self.map = pygame.Surface((map_width, map_height))
-        def tpos(x, y):
-            return (x * map_data.tilewidth, y * map_data.tileheight)
-        for l in xrange(len(map_data.tilelayers)):
-            for y in xrange(map_data.height):
-                for x in xrange(map_data.width):
-                    tile = map_data.getTileImage(x, y, l)
-                    if tile:
-                        self.map.blit(tile, tpos(x, y))
-        self.screen.blit(self.map, (0,0))
+        island_map = os.path.join(self.data_dir, "maps", "island.tmx")
+        self.map = Map(island_map)
+        self.screen.blit(self.map.surface, (0,0))
         print " * map"
 
         # Files
@@ -115,8 +102,8 @@ class Game(object):
         for timer in timers.all_timers:
             timer.update(loop_time)
 
-        self.all_sprites.clear(self.screen, self.map)
-        self.all_particles.clear(self.screen, self.map)
+        self.all_sprites.clear(self.screen, self.map.surface)
+        self.all_particles.clear(self.screen, self.map.surface)
         self.all_sprites.draw(self.screen)
         self.all_particles.draw(self.screen)
         pygame.display.flip()
@@ -204,3 +191,49 @@ class Control(object):
         "Respond to one of our events, checking key if needed."
         if event.type not in (KEYDOWN, KEYUP) or event.key in self.keys:
             self.act(*self.act_args)
+
+
+class Map(object):
+    "Stores data about the map. Initialize with the name of a map to load."
+
+    def __init__(self, map_location):
+        self.data = tmxloader.load_pygame(map_location)
+        pxwidth, pxheight = self.tile2px(self.data.width, self.data.height)
+        self.surface = pygame.Surface((pxwidth, pxheight))
+        for l in xrange(len(self.data.tilelayers)):
+            for y in xrange(self.data.height):
+                for x in xrange(self.data.width):
+                    tile = self.data.getTileImage(x, y, l)
+                    if tile:
+                        self.surface.blit(tile, self.tile2px(x, y))
+
+    def walkable_rect(self, position):
+        "Takes a pygame.Rect, returns True iff all corners are on walkable tiles."
+        for corner in (position.topleft, position.bottomleft, position.topright, position.bottomright):
+            if not self.walkable_coords(*corner):
+                return False
+        return True
+
+    def walkable_coords(self, x, y):
+        walkable = True
+        x, y = self.px2tile(x, y)
+        for layer in self.data.tilelayers:
+            gid = layer.data[y][x]
+            if gid:
+                # there's a tile present
+                try:
+                    properties = self.data.tile_properties[gid]
+                    if properties["nowalk"]:
+                        walkable = False
+                except KeyError:
+                    # it has no properties
+                    walkable = True
+        return walkable
+
+    def px2tile(self, x, y):
+        "Converts an x, y position from real (pixel) position to tile location."
+        return (x / self.data.tilewidth, y / self.data.tileheight)
+
+    def tile2px(self, x, y):
+        "Converts an x, y position from tile location to real (pixel) position."
+        return (x * self.data.tilewidth, y * self.data.tileheight)
