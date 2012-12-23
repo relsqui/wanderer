@@ -197,25 +197,28 @@ class Map(object):
 
     def __init__(self, map_location):
         self.data = tmxloader.load_pygame(map_location)
-        pxwidth, pxheight = self.tile2px(self.data.width, self.data.height)
-        self.surface = pygame.Surface((pxwidth, pxheight))
-        self.tile_masks = {}
         color_key = self.data.tilesets[0].trans
         self.color_key = tuple(ord(c) for c in color_key.decode('hex'))
+        pxwidth, pxheight = self.tile2px(self.data.width, self.data.height)
+        self.surface = pygame.Surface((pxwidth, pxheight))
+        self.walk_mask = pygame.sprite.Sprite()
+        self.walk_mask.image = pygame.Surface((pxwidth, pxheight))
+        self.walk_mask.image.set_colorkey(self.color_key)
+        self.walk_mask.rect = self.walk_mask.image.get_rect()
+        self.tile_masks = {}
         for l in xrange(len(self.data.tilelayers)):
             for y in xrange(self.data.height):
                 for x in xrange(self.data.width):
                     tile = self.data.getTileImage(x, y, l)
                     if tile:
                         self.surface.blit(tile, self.tile2px(x, y))
-        """
-        tw = self.data.tilewidth
-        th = self.data.tileheight
+        print "   (Initializing walk mask, this might take a sec ...)"
         for x in xrange(self.data.width):
             for y in xrange(self.data.height):
-                # cache masks for all the starting tiles
-                self.get_tile_mask(x * tw, y * th)
-        """
+                px_x = x * self.data.tilewidth
+                px_y = y * self.data.tileheight
+                mask = self.get_tile_mask(px_x, px_y)
+                self.walk_mask.image.blit(mask, (px_x, px_y))
 
     def walkable_rect(self, position):
         "Takes a pygame.Rect, returns True iff all corners are on walkable points."
@@ -236,6 +239,9 @@ class Map(object):
 
     def walkable_mask(self, sprite):
         "Takes a sprite (with .image and .rect attributes), and returns True unless any non-alpha part of that sprite is on top of any visible part of a nowalk tile."
+        """
+        # This is from when I was generating tile masks on the fly.
+        # Saved so I can reuse the code when I'm generating new terrain.
         tw, th = (self.data.tilewidth, self.data.tileheight)
         corners = []
         corners.append(sprite.rect.topleft)
@@ -259,7 +265,8 @@ class Map(object):
         terrain_sprite.rect = terrain.get_rect()
         tile, remainder = self.px2tile_remainder(*sprite.rect.topleft)
         terrain_sprite.rect.topleft = (sprite.rect.left - remainder[0], sprite.rect.top - remainder[1])
-        if pygame.sprite.collide_mask(sprite, terrain_sprite):
+        """
+        if pygame.sprite.collide_mask(sprite, self.walk_mask):
             return False
         else:
             return True
