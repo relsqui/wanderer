@@ -95,7 +95,7 @@ class Agent(object):
 
     def colliding_tile(self):
         "Returns boolean answer to 'Is this agent centered on a nowalk tile?'"
-        if self.game.map.walkable_coords(*self.sprite.rect.center):
+        if self.game.map.walkable_mask(self.sprite):
             return False
         return True
 

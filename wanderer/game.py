@@ -107,7 +107,6 @@ class Game(object):
         self.all_sprites.draw(self.screen)
         self.all_particles.draw(self.screen)
         pygame.display.flip()
-        sys.stdout.flush()
 
     def init_files(self):
         "Internal. Initialize data files."
@@ -200,18 +199,26 @@ class Map(object):
         self.data = tmxloader.load_pygame(map_location)
         pxwidth, pxheight = self.tile2px(self.data.width, self.data.height)
         self.surface = pygame.Surface((pxwidth, pxheight))
+        self.tile_masks = {}
+        color_key = self.data.tilesets[0].trans
+        self.color_key = tuple(ord(c) for c in color_key.decode('hex'))
         for l in xrange(len(self.data.tilelayers)):
             for y in xrange(self.data.height):
                 for x in xrange(self.data.width):
                     tile = self.data.getTileImage(x, y, l)
                     if tile:
                         self.surface.blit(tile, self.tile2px(x, y))
-        color_key = self.data.tilesets[0].trans
-        self.color_key = tuple(ord(c) for c in color_key.decode('hex'))
-        self.tile_masks = {}
+        """
+        tw = self.data.tilewidth
+        th = self.data.tileheight
+        for x in xrange(self.data.width):
+            for y in xrange(self.data.height):
+                # cache masks for all the starting tiles
+                self.get_tile_mask(x * tw, y * th)
+        """
 
     def walkable_rect(self, position):
-        "Takes a pygame.Rect, returns True iff all corners are on walkable tiles."
+        "Takes a pygame.Rect, returns True iff all corners are on walkable points."
         for corner in (position.topleft, position.bottomleft, position.topright, position.bottomright):
             if not self.walkable_coords(*corner):
                 return False
@@ -229,15 +236,36 @@ class Map(object):
 
     def walkable_mask(self, sprite):
         "Takes a sprite (with .image and .rect attributes), and returns True unless any non-alpha part of that sprite is on top of any visible part of a nowalk tile."
-        sprite_corners = [sprite.rect.topleft, sprite.rect.topright, sprite.rect.bottomleft, sprite.rect.bottomright]
-        # this is WRONG. sprites are tall enough that the top and bottom
-        # tile they're covering might not be adjacent.
-        flat_corners = []
-        for corner in sprite_corners:
-            corner_mask = self.get_tile_mask(*corner)
+        tw, th = (self.data.tilewidth, self.data.tileheight)
+        corners = []
+        corners.append(sprite.rect.topleft)
+        corners.append((corners[0][0] + tw, corners[0][1]))
+        corners.append((corners[0][0], corners[0][1] + th))
+        corners.append((corners[0][0] + tw, corners[0][1] + th))
+        # this instead of just using coords for each corner because
+        # the sprite is taller than the tiles--top left and bottom left
+        # tile position aren't necessarily vertically adjacent
+        masks = []
+        for corner in corners:
+            masks.append(self.get_tile_mask(*corner))
+        terrain = pygame.Surface((tw * 2, th * 2))
+        terrain.set_colorkey(self.color_key)
+        terrain.blit(masks[0], (0, 0))
+        terrain.blit(masks[1], (tw, 0))
+        terrain.blit(masks[2], (0, th))
+        terrain.blit(masks[3], (tw, th))
+        terrain_sprite = pygame.sprite.Sprite()
+        terrain_sprite.image = terrain
+        terrain_sprite.rect = terrain.get_rect()
+        tile, remainder = self.px2tile_remainder(*sprite.rect.topleft)
+        terrain_sprite.rect.topleft = (sprite.rect.left - remainder[0], sprite.rect.top - remainder[1])
+        if pygame.sprite.collide_mask(sprite, terrain_sprite):
+            return False
+        else:
+            return True
 
     def get_tile_mask(self, px_x, px_y):
-        "Returns a pygame.Surface whose colorkey transparency values match the walkable status of the terrain at the given tile location."
+        "Returns a pygame.Surface whose colorkey transparency values match the walkable status of the terrain at the given tile location. Caches these masks."
         x, y = self.px2tile(px_x, px_y)
         if self.tile_masks.has_key((x, y)):
             tile_mask = self.tile_masks[(x, y)]
@@ -254,16 +282,15 @@ class Map(object):
                         tile_mask.fill(color_key)
                     else:
                         tile_mask.blit(self.data.images[tile], (0, 0))
-            mask_array = pygame.surfarray.pixels2d(tile_mask)
+            mask_array = pygame.surfarray.pixels3d(tile_mask)
             key_array = numpy.array(color_key)
-            def key_replace(pixel):
-                if numpy.equal(pixel, key_array).all():
-                    return new_color_key
-                else:
-                    return color_key
-                # vectorize will make the return values into arrays
-            vector_kr = numpy.vectorize(key_replace)
-            mask_array = vector_kr(mask_array)
+            new_key_array = numpy.array(new_color_key)
+            for x in xrange(32):
+                for y in xrange(32):
+                    if numpy.equal(mask_array[x][y], key_array).all():
+                        mask_array[x][y] = new_key_array
+                    else:
+                        mask_array[x][y] = key_array
             self.tile_masks[(x, y)] = tile_mask
         return tile_mask
 
