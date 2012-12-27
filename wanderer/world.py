@@ -1,4 +1,4 @@
-import pygame, numpy
+import pygame, numpy, random
 from pytmx import tmxloader
 from wanderer.constants import *
 
@@ -145,3 +145,82 @@ class Map(object):
     def tile2px(self, x, y):
         "Converts an x, y position from tile location to real (pixel) position of the tile's (0, 0)."
         return (x * self.data.tilewidth, y * self.data.tileheight)
+
+
+class Tile(object):
+    """
+    Superclass for map tile types. Subclasses should define:
+        - SubTile.name          (string description)
+        - Subtile.center        (list of GIDs of center tile variants)
+        - Subtile.edge          (list of GIDs of north edge tile variants)
+        - Subtile.corner        (list of GIDs of NW corner tile variants)
+        - Subtile.anticorner    (list of GIDs of except-NW L tile variants)
+        - Subtile.spot          (list of GIDs of self-contained tile variants)
+    """
+    NORTH = 1
+    SOUTH = 2
+    EAST = 4
+    WEST = 8
+
+    def __init__(self, layer, x, y):
+        super(Tile, self).__init__()
+        self.x = x
+        self.y = y
+        self.neighbors = {}
+        # self.neighbors[self.NORTH] = layer.get_tile(x, y-1)
+        # self.neighbors[self.SOUTH] = layer.get_tile(x, y+1)
+        # self.neighbors[self.EAST] = layer.get_tile(x+1, y)
+        # self.neighbors[self.WEST] = layer.get_tile(x-1, y)
+
+    def image(self):
+        NORTH, SOUTH, EAST, WEST = (self.NORTH, self.SOUTH, self.EAST, self.WEST)
+        ALL = NORTH & SOUTH & EAST & WEST
+        image = None
+        like_neighbors = 0
+        for direction, neighbor in self.neighbors:
+            if neighbor.name == self.name:
+                like_neighbors += direction
+
+        spot = [0]
+        center = [ALL]
+        corner = [NORTH+WEST, SOUTH+WEST, SOUTH+EAST, NORTH+EAST]
+        edge = [ALL-WEST, ALL-SOUTH, ALL-EAST, ALL-NORTH]
+        if like_neighbors not in center + spot + corner + edge:
+            # i.e. only one adjacent like tile, or two opposites
+            # neither of which should occur in terrain generation
+            like_neighbors = 0
+
+        rotation = 0
+        if like_neighbors in spot:
+            image = random.choice(self.spot)
+        elif like_neighbors in center:
+            diagonals = [self.north.west, self.south.west, self.south.east, self.north.east]
+            for index, neighbor in enumerate(diagonals):
+                if neighbor.name != self.name:
+                    image = random.choice(self.anticorner)
+                    rotation = 90 * index
+                    break
+                    # we're only accounting for one mismatched diagonal
+                    # because any other possibility requires an illegal board
+            else:
+                # for-else: rarely useful, but when it is nothing else will do
+                image = random.choice(self.center)
+        else:
+            if like_neighbors in corner:
+                pattern_list = corner
+            else:
+                pattern_list = edge
+            for index, neighbor_pattern in enumerate(pattern_list):
+                if neighbor_pattern == like_neighbors:
+                    image = random.choice(self.edge)
+                    rotation = 90 * index
+
+        return (image, rotation)
+
+class Grass(Tile):
+    name = "grass"
+    center = [118, 310]
+    edge = [86, 278]
+    corner = [85, 277]
+    anticorner = [55, 246, 247]
+    spot = [21, 53]
