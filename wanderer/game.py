@@ -233,9 +233,8 @@ class Map(object):
         mask = self.get_tile_mask(x, y)
         pixel = mask.get_at(remainder)[0:3]
         if pixel == self.color_key:
-            return False
-        else:
             return True
+        return False
 
     def walkable_mask(self, sprite):
         "Takes a sprite (with .image and .rect attributes), and returns True unless any non-alpha part of that sprite is on top of any visible part of a nowalk tile."
