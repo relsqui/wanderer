@@ -1,4 +1,4 @@
-import pygame, numpy, random
+import pygame, numpy, random, os
 from pytmx import tmxloader
 from wanderer.constants import *
 
@@ -6,8 +6,8 @@ from wanderer.constants import *
 class Map(object):
     "Stores data about the map. Initialize with the location of a map to load."
 
-    def __init__(self, map_location):
-        self.data = tmxloader.load_pygame(map_location)
+    def __init__(self):
+        self.data = tmxloader.load_pygame(os.path.join(DATA_DIR, "maps", "island.tmx"))
         color_key = self.data.tilesets[0].trans
         self.color_key = tuple(ord(c) for c in color_key.decode('hex'))
         pxwidth, pxheight = self.tile2px(self.data.width, self.data.height)
@@ -147,38 +147,73 @@ class Map(object):
         return (x * self.data.tilewidth, y * self.data.tileheight)
 
 
+class Layer(object):
+    def __init__(self, width, height):
+        super(Layer, self).__init__()
+        self.width = width
+        self.height = height
+        self.tiles = {}
+
+    def get_tile(self, x, y):
+        if self.tiles.has_key((x, y)):
+            return self.tiles[(x, y)]
+        return None
+
+    def set_tile(self, tile, x, y):
+        self.tiles[(x, y)] = tile
+
+    def fill(self, tile):
+        for x in xrange(self.width):
+            for y in xrange(self.height):
+                self.tiles[(x, y)] = tile
+
+
 class Tile(object):
-    """
-    Superclass for map tile types. Subclasses should define:
-        - SubTile.name          (string description)
-        - Subtile.center        (list of GIDs of center tile variants)
-        - Subtile.edge          (list of GIDs of north edge tile variants)
-        - Subtile.corner        (list of GIDs of NW corner tile variants)
-        - Subtile.anticorner    (list of GIDs of except-NW L tile variants)
-        - Subtile.spot          (list of GIDs of self-contained tile variants)
-    """
+    "Information about a specific tile."
     NORTH = 1
     SOUTH = 2
     EAST = 4
     WEST = 8
+    TSIZE = 32  # pixels per side per tile
 
-    def __init__(self, layer, x, y):
+    def __init__(self, name, layer, x, y):
         super(Tile, self).__init__()
+        self.name = name
         self.x = x
         self.y = y
         self.neighbors = {}
-        # self.neighbors[self.NORTH] = layer.get_tile(x, y-1)
-        # self.neighbors[self.SOUTH] = layer.get_tile(x, y+1)
-        # self.neighbors[self.EAST] = layer.get_tile(x+1, y)
-        # self.neighbors[self.WEST] = layer.get_tile(x-1, y)
+        self.neighbors[self.NORTH] = layer.get_tile(x, y-1)
+        self.neighbors[self.SOUTH] = layer.get_tile(x, y+1)
+        self.neighbors[self.EAST] = layer.get_tile(x+1, y)
+        self.neighbors[self.WEST] = layer.get_tile(x-1, y)
+        tile_sheet = pygame.image.load(os.path.join(DATA_DIR, "images", "tiles", name + ".png"))
+        cursor = pygame.Rect(0, 0, self.TSIZE, self.TSIZE)
+        self.spot = [tile_sheet.subsurface(cursor)]
+        cursor.top += self.TSIZE
+        self.spot.append(tile_sheet.subsurface(cursor))
+        cursor.left += 2 * self.TSIZE
+        self.anticorner = [tile_sheet.subsurface(cursor)]
+        cursor.left -= 2 * self.TSIZE
+        cursor.top += self.TSIZE
+        self.corner = [tile_sheet.subsurface(cursor)]
+        cursor.left += self.TSIZE
+        self.edge = [tile_sheet.subsurface(cursor)]
+        cursor.top += self.TSIZE
+        self.center = [tile_sheet.subsurface(cursor)]
+        cursor.top += 2 * self.TSIZE
+        self.center.append(tile_sheet.subsurface(cursor))
+        cursor.left -= self.TSIZE
+        self.center.append(tile_sheet.subsurface(cursor))
+        cursor.left += 2 * self.TSIZE
+        self.center.append(tile_sheet.subsurface(cursor))
 
-    def image(self):
+    def get_image(self):
         NORTH, SOUTH, EAST, WEST = (self.NORTH, self.SOUTH, self.EAST, self.WEST)
         ALL = NORTH & SOUTH & EAST & WEST
         image = None
         like_neighbors = 0
         for direction, neighbor in self.neighbors:
-            if neighbor.name == self.name:
+            if neighbor and neighbor.name == self.name:
                 like_neighbors += direction
 
         spot = [0]
@@ -196,7 +231,7 @@ class Tile(object):
         elif like_neighbors in center:
             diagonals = [self.north.west, self.south.west, self.south.east, self.north.east]
             for index, neighbor in enumerate(diagonals):
-                if neighbor.name != self.name:
+                if neighbor and neighbor.name != self.name:
                     image = random.choice(self.anticorner)
                     rotation = 90 * index
                     break
@@ -215,12 +250,6 @@ class Tile(object):
                     image = random.choice(self.edge)
                     rotation = 90 * index
 
-        return (image, rotation)
-
-class Grass(Tile):
-    name = "grass"
-    center = [118, 310]
-    edge = [86, 278]
-    corner = [85, 277]
-    anticorner = [55, 246, 247]
-    spot = [21, 53]
+        if rotation:
+            image = pygame.transform.rotate(image, rotation)
+        return image

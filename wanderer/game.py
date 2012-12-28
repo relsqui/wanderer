@@ -33,12 +33,6 @@ class Game(object):
             sys.exit(1)
         print " * pygame"
 
-        if getattr(sys, 'frozen', None):
-            BASEDIR = sys._MEIPASS
-        else:
-            BASEDIR = os.path.dirname(__file__)
-        self.data_dir = os.path.join(BASEDIR, "data")
-
         # Interface
         self.window = pygame.display.set_mode((self.WINDOW_WIDTH, self.WINDOW_HEIGHT))
         pygame.display.set_caption(self.WINDOW_TITLE)
@@ -46,13 +40,12 @@ class Game(object):
         pygame.key.set_repeat(self.KEY_DELAY, self.KEY_INTERVAL)
 
         # Font. Freeware font from http://www.04.jp.org/
-        font_file = os.path.join(self.data_dir, "04B_11__.TTF")
+        font_file = os.path.join(DATA_DIR, "04B_11__.TTF")
         self.font = pygame.font.Font(font_file, self.FONT_SIZE)
         self.big_font = pygame.font.Font(font_file, self.BIG_FONT_SIZE)
         print " * interface"
 
-        island_map = os.path.join(self.data_dir, "maps", "island.tmx")
-        self.map = world.Map(island_map)
+        self.map = world.Map()
         self.screen.blit(self.map.surface, (0,0))
         print " * map"
 
@@ -109,7 +102,7 @@ class Game(object):
 
     def init_files(self):
         "Internal. Initialize data files."
-        text_directory = os.path.join(self.data_dir, "text")
+        text_directory = os.path.join(DATA_DIR, "text")
         text_files = os.listdir(text_directory)
         for filename in text_files:
             name, ext = os.path.splitext(filename)
@@ -118,7 +111,7 @@ class Game(object):
             for line in f:
                 self.TEXT[name].append(line.strip())
             f.close()
-        image_directory = os.path.join(self.data_dir, "images")
+        image_directory = os.path.join(DATA_DIR, "images")
         self.SPRITES = os.path.join(image_directory, "lady_sprites.png")
 
     def init_controls(self):
