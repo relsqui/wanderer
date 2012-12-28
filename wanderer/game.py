@@ -94,6 +94,9 @@ class Game(object):
         for timer in timers.all_timers:
             timer.update(loop_time)
 
+        if self.map.dirty:
+            self.screen.blit(self.map.surface, (0, 0))
+            self.map.dirty = False
         self.all_sprites.clear(self.screen, self.map.surface)
         self.all_particles.clear(self.screen, self.map.surface)
         self.all_sprites.draw(self.screen)
@@ -143,8 +146,9 @@ class Game(object):
         controls.append(Control([KEYDOWN], [K_7], self.player.set_sprite, 7))
         controls.append(Control([KEYDOWN], [K_8], self.player.set_sprite, 8))
 
-        # NPCs
+        # Miscellaneous
         controls.append(Control([KEYDOWN], [K_n], agents.Npc, self))
+        controls.append(Control([KEYDOWN], [K_d], self.player.dig))
 
         for control in controls:
             for event in control.events:

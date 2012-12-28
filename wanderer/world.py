@@ -15,6 +15,7 @@ class Map(object):
         self.width = int(math.ceil(px_width/TILE_SIZE))
         self.height = int(math.ceil(px_height/TILE_SIZE))
         self.layers = []
+        self.dirty = False
 
         ocean = Layer(self.width, self.height).fill(Ocean)
         dirt = Layer(self.width, self.height).fill(Tile, "dirt")
@@ -34,22 +35,28 @@ class Map(object):
         grass.set_column(self.width-2, None)
         grass.set_column(self.width-1, None)
 
-        # ocean doesn't need settling because we haven't changed it since the fill
-        dirt.settle_tiles()
-        grass.settle_tiles()
         for layer in [ocean, dirt, grass]:
+            layer.update()
             self.layers.append(layer)
-            self.surface.blit(layer.surface, (0, 0))
 
-        self.tile_masks = {}
+        self.tile_masks = {} # to store masks cached by get_tile_mask
+        layer.update()
         self.walk_mask = pygame.sprite.Sprite()
         self.walk_mask.image = pygame.Surface((px_width, px_height))
         self.walk_mask.image.set_colorkey(COLOR_KEY)
         self.walk_mask.rect = self.surface.get_rect()
+
+        self.update()
+
+    def update(self):
+        "Redraw the map surface and walk mask."
+        for layer in self.layers:
+            self.surface.blit(layer.surface, (0, 0))
         for x in xrange(self.width):
             for y in xrange(self.height):
                 mask = self.get_tile_mask(x, y)
                 self.walk_mask.image.blit(mask, (x*TILE_SIZE, y*TILE_SIZE))
+        self.dirty = True
 
     def walkable_rect(self, position):
         "Takes a pygame.Rect, returns True iff all corners are on walkable points."
@@ -105,6 +112,26 @@ class Map(object):
             tiles.append(layer.get_tile(x, y))
         return tiles
 
+    def dig(self, px_x, px_y):
+        "Attempts to dig away a tile under the coordinates given."
+        x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
+        for layer in reversed(self.layers):
+            # not using tiles_under because we need the layer info
+            tile = layer.get_tile(x, y)
+            if not tile:
+                continue
+            if tile.name == "grass":
+                layer.set_tile(x, y, None)
+                layer.update()
+                self.update()
+                return True
+            else:
+                # we hit a non-grass tile
+                return False
+        # went all the way through the tile stack
+        return False
+
+
 
 class Layer(object):
     "Stores a grid of tile objects and a surface which depicts them. Initialize with width and height in tiles."
@@ -114,6 +141,7 @@ class Layer(object):
         self.width = width
         self.height = height
         self.tiles = {}
+        # surface will be set by update() after we get some tiles
 
     def get_tile(self, x, y):
         "Return the tile at position x, y or None if there is none."
@@ -130,7 +158,7 @@ class Layer(object):
         else:
             self.tiles[(x, y)] = None
 
-    def settle_tiles(self):
+    def update(self):
         "Update neighbors and images for all tiles on the layer."
         for x in xrange(self.width):
             for y in xrange(self.height):
@@ -141,41 +169,30 @@ class Layer(object):
         # yes, we're doing the WHOLE LOOP twice
         # because we need to set all the neighbors
         # before we can make all the images
+        self.surface = pygame.Surface((self.width*TILE_SIZE, self.height*TILE_SIZE))
+        self.surface.set_colorkey(COLOR_KEY)
         for x in xrange(self.width):
             for y in xrange(self.height):
                 if self.tiles.has_key((x, y)):
                     tile = self.tiles[(x, y)]
                     if tile:
                         tile.make_image()
+                        self.surface.blit(tile.image, (x*TILE_SIZE, y*TILE_SIZE))
 
     def fill(self, tile, *args):
         for x in xrange(self.width):
             for y in xrange(self.height):
                 self.set_tile(x, y, tile, *args)
-        self.settle_tiles()
         return self
         # ^ so we can initialize with layer = Layer(x, y).fill(tile)
 
     def set_row(self, y, tile, *args):
         for x in xrange(self.width):
             self.set_tile(x, y, tile, *args)
-        self.settle_tiles()
 
     def set_column(self, x, tile, *args):
         for y in xrange(self.height):
             self.set_tile(x, y, tile, *args)
-        self.settle_tiles()
-
-    @property
-    def surface(self):
-        surface = pygame.Surface((self.width*TILE_SIZE, self.height*TILE_SIZE))
-        for x in xrange(self.width):
-            for y in xrange(self.height):
-                tile = self.get_tile(x, y)
-                if tile:
-                    surface.blit(tile.image, (x*TILE_SIZE, y*TILE_SIZE))
-        surface.set_colorkey(COLOR_KEY)
-        return surface
 
 
 class Tile(object):
@@ -229,11 +246,10 @@ class Tile(object):
 
     def set_neighbors(self, layer, x, y):
         NORTH, SOUTH, EAST, WEST = (1, 2, 4, 8)
-        # one is for iterating, one is for quick/readable accessing
-        self.neighbors[NORTH] = self.north = layer.get_tile(x, y-1)
-        self.neighbors[SOUTH] = self.south = layer.get_tile(x, y+1)
-        self.neighbors[EAST] = self.east = layer.get_tile(x+1, y)
-        self.neighbors[WEST] = self.west = layer.get_tile(x-1, y)
+        self.neighbors[NORTH] = layer.get_tile(x, y-1)
+        self.neighbors[SOUTH] = layer.get_tile(x, y+1)
+        self.neighbors[EAST] = layer.get_tile(x+1, y)
+        self.neighbors[WEST] = layer.get_tile(x-1, y)
 
     def make_image(self):
         NORTH, SOUTH, EAST, WEST = (1, 2, 4, 8)

@@ -239,6 +239,11 @@ class Player(Agent):
         for npc in self.game.all_npcs:
             npc.called(self)
 
+    def dig(self):
+        "Attempt to dig underneath the sprite."
+        if not self.game.map.dig(*self.sprite.rect.center):
+            self.interject("I can't dig here!")
+
 
 class Npc(Agent):
     """
