@@ -19,10 +19,10 @@ class Game(object):
 
     KEY_DELAY = 200     # ms before keys start repeating
     KEY_INTERVAL = 10   # ms between key repeats
-    LEFT_KEYS = (K_h, K_LEFT, K_a)
-    RIGHT_KEYS = (K_l, K_RIGHT, K_d)    # these define three control options:
-    UP_KEYS = (K_k, K_UP, K_w)          # wasd, hjkl, and arrow keys
-    DOWN_KEYS = (K_j, K_DOWN, K_s)
+    LEFT_KEYS = (K_h, K_LEFT)
+    RIGHT_KEYS = (K_l, K_RIGHT)
+    UP_KEYS = (K_k, K_UP)
+    DOWN_KEYS = (K_j, K_DOWN)
 
     def __init__(self):
         print "Welcome! Initializing game ..."
