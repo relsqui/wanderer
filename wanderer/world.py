@@ -16,7 +16,7 @@ class Map(object):
         self.height = int(math.ceil(px_height/TILE_SIZE))
         self.layers = []
 
-        ocean = Layer(self.width, self.height).fill(Tile, "water", True)
+        ocean = Layer(self.width, self.height).fill(Ocean)
         dirt = Layer(self.width, self.height).fill(Tile, "dirt")
         grass = Layer(self.width, self.height).fill(Tile, "grass")
 
@@ -244,3 +244,12 @@ class Tile(object):
             # so we can figure out what went wrong
 
         self.image = random.choice(self.variants[like_neighbors])
+
+
+class Ocean(Tile):
+    "Water tiles that are only ever center, to use as a backdrop."
+    def __init__(self):
+        super(Ocean, self).__init__("water", True)
+        centers = self.variants[15]
+        del(self.variants)
+        self.variants = {0: centers}
