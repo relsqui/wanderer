@@ -85,9 +85,9 @@ class Agent(object):
 
     def colliding(self):
         "Returns boolean answer to 'Is this agent colliding with anything?'"
-        if self.colliding_tile():
-            return True
         if self.colliding_wall():
+            return True
+        if self.colliding_tile():
             return True
         if self.colliding_sprites():
             return True

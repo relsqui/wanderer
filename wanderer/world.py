@@ -54,12 +54,8 @@ class Map(object):
     def walkable_rect(self, position):
         "Takes a pygame.Rect, returns True iff all corners are on walkable points."
         for corner in (position.topleft, position.bottomleft, position.topright, position.bottomright):
-            try:
-                if not self.walkable_coords(*corner):
-                    return False
-            except IndexError:
-                # out of bounds. not for us to catch!
-                pass
+            if not self.walkable_coords(*corner):
+                return False
         return True
 
     def walkable_coords(self, px_x, px_y):
