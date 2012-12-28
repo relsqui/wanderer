@@ -45,7 +45,7 @@ class Game(object):
         self.big_font = pygame.font.Font(font_file, self.BIG_FONT_SIZE)
         print " * interface"
 
-        self.map = world.Map()
+        self.map = world.Map(640, 640)
         self.screen.blit(self.map.surface, (0,0))
         print " * map"
 
