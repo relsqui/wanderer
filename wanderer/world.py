@@ -15,13 +15,32 @@ class Map(object):
         self.width = int(math.ceil(px_width/TILE_SIZE))
         self.height = int(math.ceil(px_height/TILE_SIZE))
         self.layers = []
+
         ocean = Layer(self.width, self.height).fill(Tile, "water", True)
-        self.layers.append(ocean)
-        self.surface.blit(ocean.surface, (0, 0))
-        for stratum in ["dirt", "grass"]:
-            layer = Layer(self.width, self.height).fill(Tile, stratum)
+        dirt = Layer(self.width, self.height).fill(Tile, "dirt")
+        grass = Layer(self.width, self.height).fill(Tile, "grass")
+
+        dirt.set_row(0, None)
+        dirt.set_row(self.height-1, None)
+        dirt.set_column(0, None)
+        dirt.set_column(self.width-1, None)
+
+        grass.set_row(0, None)
+        grass.set_row(1, None)
+        grass.set_row(self.height-2, None)
+        grass.set_row(self.height-1, None)
+        grass.set_column(0, None)
+        grass.set_column(1, None)
+        grass.set_column(self.width-2, None)
+        grass.set_column(self.width-1, None)
+
+        # ocean doesn't need settling because we haven't changed it since the fill
+        dirt.settle_tiles()
+        grass.settle_tiles()
+        for layer in [ocean, dirt, grass]:
             self.layers.append(layer)
             self.surface.blit(layer.surface, (0, 0))
+
         self.tile_masks = {}
         self.walk_mask = pygame.sprite.Sprite()
         self.walk_mask.image = pygame.Surface((px_width, px_height))
@@ -82,6 +101,8 @@ class Map(object):
 
 
 class Layer(object):
+    "Stores a grid of tile objects and a surface which depicts them. Initialize with width and height in tiles."
+
     def __init__(self, width, height):
         super(Layer, self).__init__()
         self.width = width
@@ -89,41 +110,65 @@ class Layer(object):
         self.tiles = {}
 
     def get_tile(self, x, y):
+        "Return the tile at position x, y or None if there is none."
         if self.tiles.has_key((x, y)):
             return self.tiles[(x, y)]
         return None
 
-    def set_tile(self, tile, x, y):
-        self.tiles[(x, y)] = tile
-        self.tiles[(x, y)].set_neighbors(self, x, y)
+    def set_tile(self, x, y, tile, *args):
+        "Set the tile at x, y to the given Tile callable with the arguments supplied, or None"
+        if tile:
+            new_tile = tile(*args)
+            new_tile.set_neighbors(self, x, y)
+            self.tiles[(x, y)] = new_tile
+        else:
+            self.tiles[(x, y)] = None
 
     def settle_tiles(self):
+        "Update neighbors and images for all tiles on the layer."
         for x in xrange(self.width):
             for y in xrange(self.height):
                 if self.tiles.has_key((x, y)):
-                    self.tiles[(x, y)].set_neighbors(self, x, y)
+                    tile = self.tiles[(x, y)]
+                    if tile:
+                        tile.set_neighbors(self, x, y)
         # yes, we're doing the WHOLE LOOP twice
-        # that's because we need to set all the neighbors
+        # because we need to set all the neighbors
         # before we can make all the images
         for x in xrange(self.width):
             for y in xrange(self.height):
                 if self.tiles.has_key((x, y)):
-                    self.tiles[(x, y)].make_image()
+                    tile = self.tiles[(x, y)]
+                    if tile:
+                        tile.make_image()
 
     def fill(self, tile, *args):
         for x in xrange(self.width):
             for y in xrange(self.height):
-                self.set_tile(tile(*args), x, y)
+                self.set_tile(x, y, tile, *args)
         self.settle_tiles()
         return self
         # ^ so we can initialize with layer = Layer(x, y).fill(tile)
+
+    def set_row(self, y, tile, *args):
+        for x in xrange(self.width):
+            self.set_tile(x, y, tile, *args)
+        self.settle_tiles()
+
+    def set_column(self, x, tile, *args):
+        for y in xrange(self.height):
+            self.set_tile(x, y, tile, *args)
+        self.settle_tiles()
 
     @property
     def surface(self):
         surface = pygame.Surface((self.width*TILE_SIZE, self.height*TILE_SIZE))
         for x in xrange(self.width):
             for y in xrange(self.height):
-                surface.blit(self.get_tile(x, y).image, (x*TILE_SIZE, y*TILE_SIZE))
+                tile = self.get_tile(x, y)
+                if tile:
+                    surface.blit(tile.image, (x*TILE_SIZE, y*TILE_SIZE))
+        surface.set_colorkey(COLOR_KEY)
         return surface
 
 
@@ -138,7 +183,7 @@ class Tile(object):
         super(Tile, self).__init__()
         self.name = name
         self.nowalk = nowalk
-        self._image = None
+        self.image = None
         self.neighbors = {}
 
         tile_sheet = pygame.image.load(os.path.join(DATA_DIR, "images", "tiles", name + ".png"))
@@ -210,14 +255,7 @@ class Tile(object):
             for index, neighbor_pattern in enumerate(pattern_list):
                 if neighbor_pattern == like_neighbors:
                     image = random.choice(self.edge)
-                    rotation = 90 * index
 
         if rotation:
             image = pygame.transform.rotate(image, rotation)
-        self._image = image
-
-    @property
-    def image(self):
-        if not self._image:
-            self.make_image()
-        return self._image
+        self.image = image
