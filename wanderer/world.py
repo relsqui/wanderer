@@ -174,10 +174,6 @@ class Layer(object):
 
 class Tile(object):
     "Information about a specific tile."
-    NORTH = 1
-    SOUTH = 2
-    EAST = 4
-    WEST = 8
 
     def __init__(self, name, nowalk = False):
         super(Tile, self).__init__()
@@ -186,76 +182,65 @@ class Tile(object):
         self.image = None
         self.neighbors = {}
 
+        NORTH, SOUTH, EAST, WEST = (1, 2, 4, 8)
+        ALL = NORTH + SOUTH + EAST + WEST
         tile_sheet = pygame.image.load(os.path.join(DATA_DIR, "images", "tiles", name + ".png"))
+        tile_locations = {}
+
+        # spot
+        tile_locations[0] = [(0, 0), (0, 1)]
+
+        # center
+        tile_locations[15] = [(1, 3), (0, 5), (1, 5), (2, 5)]
+
+        # corner
+        # note that the directions used as indices are where neighbor tiles ARE
+        # i.e. NORTH+EAST is for the SOUTHWEST corner tile variant
+        tile_locations[SOUTH+EAST] = [(0, 2)]
+        tile_locations[SOUTH+WEST] = [(2, 2)]
+        tile_locations[NORTH+EAST] = [(0, 4)]
+        tile_locations[NORTH+WEST] = [(2, 4)]
+
+        # edge
+        # unlike the above, ALL-NORTH is actually the north edge, etc.
+        tile_locations[ALL-NORTH] = [(1, 2)]
+        tile_locations[ALL-WEST] = [(0, 3)]
+        tile_locations[ALL-EAST] = [(2, 3)]
+        tile_locations[ALL-SOUTH] = [(1, 4)]
+
+        # ignoring anticorner tiles for now, but they're at (1, 0) through (2, 1)
+
+        self.variants = {}
         cursor = pygame.Rect(0, 0, TILE_SIZE, TILE_SIZE)
-        self.spot = [tile_sheet.subsurface(cursor)]
-        cursor.top += TILE_SIZE
-        self.spot.append(tile_sheet.subsurface(cursor))
-        cursor.left += 2 * TILE_SIZE
-        self.anticorner = [tile_sheet.subsurface(cursor)]
-        cursor.left -= 2 * TILE_SIZE
-        cursor.top += TILE_SIZE
-        self.corner = [tile_sheet.subsurface(cursor)]
-        cursor.left += TILE_SIZE
-        self.edge = [tile_sheet.subsurface(cursor)]
-        cursor.top += TILE_SIZE
-        self.center = [tile_sheet.subsurface(cursor)]
-        cursor.top += 2 * TILE_SIZE
-        self.center.append(tile_sheet.subsurface(cursor))
-        cursor.left -= TILE_SIZE
-        self.center.append(tile_sheet.subsurface(cursor))
-        cursor.left += 2 * TILE_SIZE
-        self.center.append(tile_sheet.subsurface(cursor))
+        for shape, locations in tile_locations.items():
+            self.variants[shape] = []
+            for location in locations:
+                x, y = location
+                x *= TILE_SIZE
+                y *= TILE_SIZE
+                cursor.topleft = (x, y)
+                self.variants[shape].append(tile_sheet.subsurface(cursor))
 
     def set_neighbors(self, layer, x, y):
+        NORTH, SOUTH, EAST, WEST = (1, 2, 4, 8)
         # one is for iterating, one is for quick/readable accessing
-        self.neighbors[self.NORTH] = self.north = layer.get_tile(x, y-1)
-        self.neighbors[self.SOUTH] = self.south = layer.get_tile(x, y+1)
-        self.neighbors[self.EAST] = self.east = layer.get_tile(x+1, y)
-        self.neighbors[self.WEST] = self.west = layer.get_tile(x-1, y)
+        self.neighbors[NORTH] = self.north = layer.get_tile(x, y-1)
+        self.neighbors[SOUTH] = self.south = layer.get_tile(x, y+1)
+        self.neighbors[EAST] = self.east = layer.get_tile(x+1, y)
+        self.neighbors[WEST] = self.west = layer.get_tile(x-1, y)
 
     def make_image(self):
-        NORTH, SOUTH, EAST, WEST = (self.NORTH, self.SOUTH, self.EAST, self.WEST)
+        NORTH, SOUTH, EAST, WEST = (1, 2, 4, 8)
         ALL = NORTH + SOUTH + EAST + WEST
-        image = None
+
         like_neighbors = 0
         for direction, neighbor in self.neighbors.items():
             if neighbor and neighbor.name == self.name:
                 like_neighbors += direction
 
-        spot = [0]
-        center = [ALL]
-        corner = [NORTH+WEST, SOUTH+WEST, SOUTH+EAST, NORTH+EAST]
-        edge = [ALL-WEST, ALL-SOUTH, ALL-EAST, ALL-NORTH]
-        if like_neighbors not in spot + center + corner + edge:
-            # i.e. only one adjacent like tile, or two opposites
-            # neither of which should occur in terrain generation
+        if not self.variants.has_key(like_neighbors):
             like_neighbors = 0
+            # this makes it nice and conspicuous
+            # so we can figure out what went wrong
 
-        rotation = 0
-        if like_neighbors in spot:
-            image = random.choice(self.spot)
-        elif like_neighbors in center:
-            diagonals = [self.north.west, self.south.west, self.south.east, self.north.east]
-            for index, neighbor in enumerate(diagonals):
-                if neighbor and neighbor.name != self.name:
-                    image = random.choice(self.anticorner)
-                    rotation = 90 * index
-                    break
-                    # we're only accounting for one mismatched diagonal
-                    # because any other possibility requires an illegal board
-            else:
-                # for-else: rarely useful, but when it is nothing else will do
-                image = random.choice(self.center)
-        else:
-            if like_neighbors in corner:
-                pattern_list = corner
-            else:
-                pattern_list = edge
-            for index, neighbor_pattern in enumerate(pattern_list):
-                if neighbor_pattern == like_neighbors:
-                    image = random.choice(self.edge)
-
-        if rotation:
-            image = pygame.transform.rotate(image, rotation)
-        self.image = image
+        self.image = random.choice(self.variants[like_neighbors])
