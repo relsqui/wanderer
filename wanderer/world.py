@@ -46,8 +46,10 @@ class Map(object):
         self.walk_mask.image = pygame.Surface((px_width, px_height))
         self.walk_mask.image.set_colorkey(COLOR_KEY)
         self.walk_mask.rect = self.surface.get_rect()
-        self.walk_mask.image.fill(COLOR_KEY)
-        # ^ temporary, while we're getting the map working at all
+        for x in xrange(self.width):
+            for y in xrange(self.height):
+                mask = self.get_tile_mask(x, y)
+                self.walk_mask.image.blit(mask, (x*TILE_SIZE, y*TILE_SIZE))
 
     def walkable_rect(self, position):
         "Takes a pygame.Rect, returns True iff all corners are on walkable points."
@@ -76,23 +78,27 @@ class Map(object):
     def get_tile_mask(self, x, y, force = False):
         "Returns a pygame.Surface whose colorkey transparency values match the walkable status of the terrain at the given tile location. Caches these masks."
         if force or not self.tile_masks.has_key((x, y)):
-            new_color_key = (255, 255, 255)
+            if COLOR_KEY == (0, 0, 0):
+                new_color_key = (255, 255, 255)
+            else:
+                new_color_key = (0, 0, 0)
             tile_mask = pygame.Surface((TILE_SIZE, TILE_SIZE))
+            tile_mask.set_colorkey(COLOR_KEY)
             for tile in self.tiles_under(x, y):
                 if tile:
                     if tile.nowalk:
                         tile_mask.fill(COLOR_KEY)
                     else:
-                        tile_mask.blit(tile.image, (0, 0))
-            mask_array = pygame.surfarray.pixels3d(tile_mask)
-            key_array = numpy.array(COLOR_KEY)
-            new_key_array = numpy.array(new_color_key)
-            for x in xrange(32):
-                for y in xrange(32):
-                    if numpy.equal(mask_array[x][y], key_array).all():
-                        mask_array[x][y] = new_key_array
-                    else:
-                        mask_array[x][y] = key_array
+                        tile_mask.blit(tile.image, (0,0))
+            # modified from source of pygame.surfarray.array_color_key
+            # which turned out to be easier than just using it
+            key_int = tile_mask.map_rgb(COLOR_KEY)
+            new_key_int = tile_mask.map_rgb(new_color_key)
+            mask_array = pygame.surfarray.pixels2d(tile_mask)
+            mask_array = numpy.choose(numpy.equal(mask_array, key_int), (key_int, new_key_int))
+            mask_array.shape = TILE_SIZE, TILE_SIZE
+            tile_mask = pygame.surfarray.make_surface(mask_array)
+            tile_mask.set_colorkey(COLOR_KEY)
             self.tile_masks[(x, y)] = tile_mask
         return self.tile_masks[(x, y)]
 
@@ -244,14 +250,15 @@ class Tile(object):
 
         if not self.variants.has_key(like_neighbors):
             like_neighbors = 0
-            # this makes it nice and conspicuous
-            # so we can figure out what went wrong
+            # this makes it nice and conspicuous so we can figure out what went wrong
+            # (also, a known default lets us do tricky things like Ocean)
 
         self.image = random.choice(self.variants[like_neighbors])
+        self.image.set_colorkey(COLOR_KEY)
 
 
 class Ocean(Tile):
-    "Water tiles that are only ever center, to use as a backdrop."
+    "Water tiles that are only ever center tiles, to use as a backdrop."
     def __init__(self):
         super(Ocean, self).__init__("water", True)
         centers = self.variants[15]
