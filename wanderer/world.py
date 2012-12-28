@@ -52,13 +52,17 @@ class Map(object):
     def walkable_rect(self, position):
         "Takes a pygame.Rect, returns True iff all corners are on walkable points."
         for corner in (position.topleft, position.bottomleft, position.topright, position.bottomright):
-            if not self.walkable_coords(*corner):
-                return False
+            try:
+                if not self.walkable_coords(*corner):
+                    return False
+            except IndexError:
+                # out of bounds. not for us to catch!
+                pass
         return True
 
     def walkable_coords(self, px_x, px_y):
         "Returns True if the pixel at the coordinates given is walkable, False otherwise."
-        pixel = self.walk_mask.image.get_at(px_x, px_y)[0:3]
+        pixel = self.walk_mask.image.get_at((px_x, px_y))[0:3]
         if pixel == COLOR_KEY:
             return True
         return False
