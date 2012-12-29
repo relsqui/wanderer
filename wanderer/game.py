@@ -93,12 +93,14 @@ class Game(object):
         self.all_particles.update()
         for timer in timers.all_timers:
             timer.update(loop_time)
+        self.map.update()
 
         if self.map.dirty:
             self.screen.blit(self.map.surface, (0, 0))
             self.map.dirty = False
-        self.all_sprites.clear(self.screen, self.map.surface)
-        self.all_particles.clear(self.screen, self.map.surface)
+        else:
+            self.all_sprites.clear(self.screen, self.map.surface)
+            self.all_particles.clear(self.screen, self.map.surface)
         self.all_sprites.draw(self.screen)
         self.all_particles.draw(self.screen)
         pygame.display.flip()
@@ -149,6 +151,7 @@ class Game(object):
         # Miscellaneous
         controls.append(Control([KEYDOWN], [K_n], agents.Npc, self))
         controls.append(Control([KEYDOWN], [K_d], self.player.dig))
+        controls.append(Control([KEYDOWN], [K_s], self.player.seed))
 
         for control in controls:
             for event in control.events:

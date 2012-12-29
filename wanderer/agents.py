@@ -243,6 +243,10 @@ class Player(Agent):
         "Attempt to dig underneath the sprite."
         self.game.map.dig(*self.sprite.rect.center)
 
+    def seed(self):
+        "Attempt to seed grass underneath the sprite."
+        self.game.map.seed(*self.sprite.rect.center)
+
 
 class Npc(Agent):
     """
