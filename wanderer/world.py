@@ -17,7 +17,7 @@ class Map(object):
         self.dirty = True
 
         self.layers = []
-        self.layers.append(Layer(self.width, self.height).fill(Ocean))
+        self.layers.append(Layer(self.width, self.height).fill(Tile, "water", True))
         self.layers.append(Layer(self.width-2, self.height-2, 1, 1).fill(Tile, "dirt"))
         # self.layers.append(Layer(self.width-4, self.height-4, 2, 2).fill(Tile, "grass"))
         self.player_modified = Layer(self.width, self.height)
@@ -110,12 +110,11 @@ class Map(object):
             if not tile:
                 continue
             if tile.name == "grass":
-                tile.health -= 1
-                if tile.health > 0:
-                    tile.make_image(tile.neighbor_mask, force = True)
-                else:
+                tile.health -= 4
+                if tile.health < 0:
                     layer.set_tile(x, y, None)
-                layer.dirty_tiles.append((x, y))
+                else:
+                    layer.dirty_tiles.append((x, y))
                 return True
             else:
                 # we hit a non-grass tile
@@ -125,7 +124,7 @@ class Map(object):
 
     def seed(self, px_x, px_y):
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
-        self.player_modified.set_tile(x, y, Tile, "grass")
+        self.player_modified.set_tile(x, y, Tile("grass"))
 
 
 class Layer(object):
@@ -151,59 +150,55 @@ class Layer(object):
             return self.tiles[(x, y)]
         return None
 
-    def set_tile(self, x, y, tile, *args):
-        "Set the tile at x, y to the given Tile callable with the arguments supplied, or None"
+    def set_tile(self, x, y, tile):
+        "Set the tile at x, y to the given tile, or None (destroy it)."
         destroy_tile = False
         if tile:
-            # setting a new tile, do the whole shebang
-            new_tile = tile(*args)
+            new_tile = tile
+            self.tiles[(x, y)] = new_tile
         else:
             if self.get_tile(x, y):
                 # unsetting a tile which did exist
                 # clear its neighbors first
                 new_tile = self.get_tile(x, y)
-                new_tile.neighbor_mask = (0, 0, 0, 0)
+                new_tile.bitmask = 0
                 destroy_tile = True
             else:
                 # unsetting a tile which didn't exist
                 return
 
-        # neighbors[translation] = (bits to change), (replacement bits)
         neighbors = {}
-        neighbors[(0, -1)] = (2, 3), (0, 1)     # north
-        neighbors[(0, 1)] = (0, 1), (2, 3)      # south
-        neighbors[(-1, 0)] = (1, 3), (0, 2)     # west
-        neighbors[(1, 0)] = (0, 2), (1, 3)      # east
-        neighbors[(-1, -1)] = (3,), (0,)        # northwest
-        neighbors[(1, -1)] = (2,), (1,)         # northeast
-        neighbors[(-1, 1)] = (1,), (2,)         # southwest
-        neighbors[(1, 1)] = (0,), (3,)          # southeast
-        used_bits = [0, 0, 0, 0]
+        neighbors[(0, -1)] = 0b1100 & new_tile.bitmask >> 2
+        neighbors[(0, 1)] = 0b0011 & new_tile.bitmask << 2
+        neighbors[(-1, 0)] = 0b1010 & new_tile.bitmask >> 1
+        neighbors[(1, 0)] = 0b0101 & new_tile.bitmask << 1
+        neighbors[(1, -1)] = 0b0100 & new_tile.bitmask >> 1
+        neighbors[(-1, 1)] = 0b0010 & new_tile.bitmask << 1
+        neighbors[(-1, -1)] = 0b1000 & new_tile.bitmask >> 3
+        neighbors[(1, 1)] = 0b0001 & new_tile.bitmask << 3
 
-        def copy_bits(to_list, from_list):
-            for index, old_bit in enumerate(to_list):
-                new_bit = from_list[index]
-                mask[old_bit] = new_tile.neighbor_mask[new_bit]
-                used_bits[new_bit] = 1
-
-        for transformation, bit_lists in neighbors.items():
+        for transformation, or_mask in neighbors.items():
             dx, dy = transformation
+            if x+dx not in xrange(self.left, self.left+self.width)\
+              or y+dy not in xrange(self.top, self.top+self.height):
+                continue
             neighbor = self.get_tile(x+dx, y+dy)
-            if neighbor and neighbor.name == new_tile.name:
-                self.dirty_tiles.append((x+dx, y+dy))
-                mask = list(neighbor.neighbor_mask)
-                copy_bits(*bit_lists)
-                neighbor.make_image(tuple(mask))
+            if neighbor:
+                old_mask = neighbor.bitmask
+            else:
+                neighbor = Tile(new_tile.name, mask = 0)
+                old_mask = 0
+            new_mask = old_mask | or_mask
+            if new_mask != old_mask:
+                neighbor.bitmask = new_mask
+                self.set_tile(x+dx, y+dy, neighbor)
 
         if destroy_tile:
             self.tiles.pop((x, y))
-        else:
-            new_tile.make_image(tuple(used_bits))
-            # that is, set any bits which DIDN'T have neighbors to 0
-            self.tiles[(x, y)] = new_tile
         self.dirty_tiles.append((x, y))
 
     def update(self):
+        "Redraw tiles at any changed locations."
         if not self.dirty_tiles:
             return False
         blank = pygame.Surface((TILE_SIZE, TILE_SIZE))
@@ -220,56 +215,58 @@ class Layer(object):
         return True
 
     def fill(self, tile, *args):
+        "Fill the layer with instances of a Tile callable."
         for x in xrange(self.left, self.left + self.width):
             for y in xrange(self.top, self.top + self.height):
-                self.set_tile(x, y, tile, *args)
+                self.set_tile(x, y, tile(*args))
         return self
         # ^ so we can initialize with layer = Layer(x, y).fill(tile)
 
     def set_row(self, y, tile, *args):
+        "Fill a row with instances of a Tile callable."
         for x in xrange(self.width):
-            self.set_tile(x, y, tile, *args)
+            self.set_tile(x, y, tile(*args))
 
     def set_column(self, x, tile, *args):
+        "Fill a column with instances of a Tile callable."
         for y in xrange(self.height):
-            self.set_tile(x, y, tile, *args)
+            self.set_tile(x, y, tile(*args))
 
 
 class Tile(object):
     "Information about a specific tile."
 
-    def __init__(self, name, nowalk = False):
+    def __init__(self, name, nowalk = False, mask = 0b1111):
         super(Tile, self).__init__()
         self.name = name
         self.nowalk = nowalk
-        self.image = None
-        self.neighbor_mask = (1, 1, 1, 1)
+        self.bitmask = mask
         self.health = 3.0
 
         tile_sheet = pygame.image.load(os.path.join(DATA_DIR, "images", "tiles", name + ".png"))
         tile_locations = {}
 
         # center
-        tile_locations[(1, 1, 1, 1)] = (1, 3)
+        tile_locations[0b1111] = (1, 3)
         # center variants in descending density: (0-2, 5)
 
         # corner
-        tile_locations[(0, 0, 0, 1)] = (0, 2)
-        tile_locations[(0, 0, 1, 0)] = (2, 2)
-        tile_locations[(0, 1, 0, 0)] = (0, 4)
-        tile_locations[(1, 0, 0, 0)] = (2, 4)
+        tile_locations[0b0001] = (0, 2)
+        tile_locations[0b0010] = (2, 2)
+        tile_locations[0b0100] = (0, 4)
+        tile_locations[0b1000] = (2, 4)
         
         # anticorner
-        tile_locations[(1, 1, 1, 0)] = (1, 0)
-        tile_locations[(1, 1, 0, 1)] = (2, 0)
-        tile_locations[(1, 0, 1, 1)] = (1, 1)
-        tile_locations[(0, 1, 1, 1)] = (2, 1)
+        tile_locations[0b1110] = (1, 0)
+        tile_locations[0b1101] = (2, 0)
+        tile_locations[0b1011] = (1, 1)
+        tile_locations[0b0111] = (2, 1)
 
         # edge
-        tile_locations[(0, 0, 1, 1)] = (1, 2)
-        tile_locations[(1, 0, 1, 0)] = (2, 3)
-        tile_locations[(0, 1, 0, 1)] = (0, 3)
-        tile_locations[(1, 1, 0, 0)] = (1, 4)
+        tile_locations[0b0011] = (1, 2)
+        tile_locations[0b1010] = (2, 3)
+        tile_locations[0b0101] = (0, 3)
+        tile_locations[0b1100] = (1, 4)
 
 
         self.variants = {}
@@ -285,15 +282,15 @@ class Tile(object):
         # double corners
         nw_se = pygame.Surface((TILE_SIZE, TILE_SIZE))
         nw_se.set_colorkey(COLOR_KEY)
-        nw_se.blit(self.variants[(1, 0, 0, 0)], (0, 0))
-        nw_se.blit(self.variants[(0, 0, 0, 1)], (0, 0))
-        self.variants[(1, 0, 0, 1)] = nw_se
+        nw_se.blit(self.variants[0b1000], (0, 0))
+        nw_se.blit(self.variants[0b0001], (0, 0))
+        self.variants[0b1001] = nw_se
 
         ne_sw = pygame.Surface((TILE_SIZE, TILE_SIZE))
         ne_sw.set_colorkey(COLOR_KEY)
-        ne_sw.blit(self.variants[(0, 1, 0, 0)], (0, 0))
-        ne_sw.blit(self.variants[(0, 0, 1, 0)], (0, 0))
-        self.variants[(0, 1, 1, 0)] = ne_sw
+        ne_sw.blit(self.variants[0b0100], (0, 0))
+        ne_sw.blit(self.variants[0b0010], (0, 0))
+        self.variants[0b0110] = ne_sw
 
         self.spot = {}
         cursor.topleft = (0, 0)
@@ -303,18 +300,13 @@ class Tile(object):
         self.spot[1] = tile_sheet.subsurface(cursor)
         self.spot[1].set_colorkey((COLOR_KEY))
 
-        self.variants[(0, 0, 0, 0)] = self.spot[2]
+        self.variants[0] = self.spot[2]
 
     def __repr__(self):
         return '<Tile object "{}">'.format(self.name)
 
-    def make_image(self, neighbor_mask, force = False):
-        if not self.image:
-            force = True
-
-        if neighbor_mask == self.neighbor_mask and not force:
-            return neighbor_mask
-
+    @property
+    def image(self):
         """
         if neighbor_mask == (0, 0, 0, 0):
             self.health = min(self.health, 2)
@@ -328,25 +320,15 @@ class Tile(object):
             neighbor_mask = (0, 0, 0, 0)
         """
 
-        self.image = self.variants[neighbor_mask]
+        image = self.variants[self.bitmask]
 
         if self.name == "grass":
             font = pygame.font.Font(os.path.join(DATA_DIR, "04B_11__.TTF"), 8)
-            line1 = font.render(str(neighbor_mask[0:2]), False, (100, 0, 0))
-            line2 = font.render(str(neighbor_mask[2:4]), False, (100, 0, 0))
-            self.image.blit(line1, (2, 2))
-            self.image.blit(line2, (2, 18))
+            string_mask = "{:04b}".format(self.bitmask)
+            line1 = font.render(string_mask[:2], False, (100, 0, 0))
+            line2 = font.render(string_mask[2:], False, (100, 0, 0))
+            image.blit(line1, (14, 2))
+            image.blit(line2, (14, 18))
 
-        self.neighbor_mask = neighbor_mask
-        self.image.set_colorkey(COLOR_KEY)
-
-
-class Ocean(Tile):
-    "Water tiles that are only ever center tiles, to use as a backdrop."
-    def __init__(self):
-        super(Ocean, self).__init__("water", True)
-        self.image = self.variants[(1, 1, 1, 1)]
-        self.name = "ocean"
-
-    def make_image(self, force = False):
-        return (1, 1, 1, 1)
+        image.set_colorkey(COLOR_KEY)
+        return image
