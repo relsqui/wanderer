@@ -179,19 +179,20 @@ class Layer(object):
         neighbors[(-1, 1)] = (1,), (2,)         # southwest
         neighbors[(1, 1)] = (0,), (3,)          # southeast
         used_bits = [0, 0, 0, 0]
+
+        def copy_bits(to_list, from_list):
+            for index, old_bit in enumerate(to_list):
+                new_bit = from_list[index]
+                mask[old_bit] = new_tile.neighbor_mask[new_bit]
+                used_bits[new_bit] = 1
+
         for transformation, bit_lists in neighbors.items():
             dx, dy = transformation
             neighbor = self.get_tile(x+dx, y+dy)
             if neighbor and neighbor.name == new_tile.name:
                 self.dirty_tiles.append((x+dx, y+dy))
                 mask = list(neighbor.neighbor_mask)
-                old, new = bit_lists
-                mask[old[0]] = new_tile.neighbor_mask[new[0]]
-                used_bits[new[0]] = 1
-                if len(old) > 1:
-                    # this is silly, but another loop would be way overkill
-                    mask[old[1]] = new_tile.neighbor_mask[new[1]]
-                    used_bits[new[1]] = 1
+                copy_bits(*bit_lists)
                 neighbor.make_image(tuple(mask))
 
         if destroy_tile:
@@ -212,10 +213,9 @@ class Layer(object):
             px_x = (x - self.left) * TILE_SIZE
             px_y = (y - self.top) * TILE_SIZE
             tile = self.get_tile(x, y)
+            self.surface.blit(blank, (px_x, px_y))
             if tile:
                 self.surface.blit(tile.image, (px_x, px_y))
-            else:
-                self.surface.blit(blank, (px_x, px_y))
         self.dirty_tiles = []
         return True
 
@@ -267,8 +267,8 @@ class Tile(object):
 
         # edge
         tile_locations[(0, 0, 1, 1)] = (1, 2)
-        tile_locations[(1, 0, 1, 0)] = (0, 3)
-        tile_locations[(0, 1, 0, 1)] = (2, 3)
+        tile_locations[(1, 0, 1, 0)] = (2, 3)
+        tile_locations[(0, 1, 0, 1)] = (0, 3)
         tile_locations[(1, 1, 0, 0)] = (1, 4)
 
 
@@ -298,24 +298,44 @@ class Tile(object):
         self.spot = {}
         cursor.topleft = (0, 0)
         self.spot[2] = tile_sheet.subsurface(cursor)
+        self.spot[2].set_colorkey((COLOR_KEY))
         cursor.topleft = (0, TILE_SIZE)
         self.spot[1] = tile_sheet.subsurface(cursor)
+        self.spot[1].set_colorkey((COLOR_KEY))
+
+        self.variants[(0, 0, 0, 0)] = self.spot[2]
 
     def __repr__(self):
         return '<Tile object "{}">'.format(self.name)
 
     def make_image(self, neighbor_mask, force = False):
+        if not self.image:
+            force = True
+
         if neighbor_mask == self.neighbor_mask and not force:
             return neighbor_mask
 
+        """
         if neighbor_mask == (0, 0, 0, 0):
             self.health = min(self.health, 2)
+        else:
+            self.health = max(self.health, 3)
 
         if self.health > 2:
             self.image = self.variants[neighbor_mask]
         else:
             self.image = self.spot[math.ceil(self.health)]
             neighbor_mask = (0, 0, 0, 0)
+        """
+
+        self.image = self.variants[neighbor_mask]
+
+        if self.name == "grass":
+            font = pygame.font.Font(os.path.join(DATA_DIR, "04B_11__.TTF"), 8)
+            line1 = font.render(str(neighbor_mask[0:2]), False, (100, 0, 0))
+            line2 = font.render(str(neighbor_mask[2:4]), False, (100, 0, 0))
+            self.image.blit(line1, (2, 2))
+            self.image.blit(line2, (2, 18))
 
         self.neighbor_mask = neighbor_mask
         self.image.set_colorkey(COLOR_KEY)
