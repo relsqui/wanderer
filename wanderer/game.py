@@ -11,7 +11,7 @@ class Game(object):
 
     FONT_SIZE = 8       # point
     BIG_FONT_SIZE = 16  # point
-    # color setting is in particles.TextParticle
+    TITLE_SIZE = 32     # point
 
     WINDOW_HEIGHT = 640 # pixels (starting)
     WINDOW_WIDTH = 640  # pixels (starting)
@@ -40,10 +40,15 @@ class Game(object):
         pygame.key.set_repeat(self.KEY_DELAY, self.KEY_INTERVAL)
 
         # Font. Freeware font from http://www.04.jp.org/
-        font_file = os.path.join(DATA_DIR, "04B_11__.TTF")
+        font_file = os.path.join(DATA_DIR, "fonts", "04B_11__.TTF")
         self.font = pygame.font.Font(font_file, self.FONT_SIZE)
         self.big_font = pygame.font.Font(font_file, self.BIG_FONT_SIZE)
+        title_file = os.path.join(DATA_DIR, "fonts", "04B_20__.TTF")
+        self.title_font = pygame.font.Font(title_file, self.TITLE_SIZE)
+        self.subtitle_font = pygame.font.Font(title_file, self.BIG_FONT_SIZE)
         print " * interface"
+
+        self.display_splash("Loading ...")
 
         self.map = world.Map(640, 640)
         self.screen.blit(self.map.surface, (0,0))
@@ -68,6 +73,31 @@ class Game(object):
         print " * controls & clock"
         print "Done."
 
+        self.display_splash("Ready!", "(hit enter)")
+        while True:
+            event = pygame.event.wait()
+            if event.type in [KEYDOWN, KEYUP] and event.key is K_RETURN:
+                break
+
+    def display_splash(self, message = None, small_message = None):
+        def centered(surface):
+            return self.screen.get_rect().width/2 - surface.get_rect().width/2
+        title_color = (200, 250, 200)
+        self.screen.fill((10, 100, 250))
+        title = self.title_font.render("Wanderer", False, title_color)
+        subtitle = self.subtitle_font.render("a very simple world", False, title_color)
+        self.screen.blit(title, (centered(title), 100))
+        self.screen.blit(subtitle, (centered(subtitle), 200))
+
+        if message:
+            text = self.big_font.render(message, False, title_color)
+            self.screen.blit(text, (centered(text), 500))
+
+        if small_message:
+            text = self.font.render(small_message, False, title_color)
+            self.screen.blit(text, (centered(text), 530))
+
+        pygame.display.flip()
 
     def loop(self):
         "Handle events, check timers, update sprites and particles, and re-render the screen."
