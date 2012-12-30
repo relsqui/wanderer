@@ -2,27 +2,28 @@ import pygame, sys, random
 from wanderer.constants import *
 from wanderer import agents, sprites, particles, timers, world
 
+FONT_SIZE = 8       # point
+BIG_FONT_SIZE = 16  # point
+TITLE_SIZE = 32     # point
+
+WINDOW_HEIGHT = 640 # pixels (starting)
+WINDOW_WIDTH = 640  # pixels (starting)
+WINDOW_TITLE = "Wanderer"
+
+KEY_DELAY = 200     # ms before keys start repeating
+KEY_INTERVAL = 10   # ms between key repeats
+LEFT_KEYS = (K_h, K_LEFT)
+RIGHT_KEYS = (K_l, K_RIGHT)
+UP_KEYS = (K_k, K_UP)
+DOWN_KEYS = (K_j, K_DOWN)
+
+
 class Game(object):
     """
     Game manager for display, timers, controls, etc.
 
     No arguments.
     """
-
-    FONT_SIZE = 8       # point
-    BIG_FONT_SIZE = 16  # point
-    TITLE_SIZE = 32     # point
-
-    WINDOW_HEIGHT = 640 # pixels (starting)
-    WINDOW_WIDTH = 640  # pixels (starting)
-    WINDOW_TITLE = "Wanderer"
-
-    KEY_DELAY = 200     # ms before keys start repeating
-    KEY_INTERVAL = 10   # ms between key repeats
-    LEFT_KEYS = (K_h, K_LEFT)
-    RIGHT_KEYS = (K_l, K_RIGHT)
-    UP_KEYS = (K_k, K_UP)
-    DOWN_KEYS = (K_j, K_DOWN)
 
     def __init__(self):
         print "Welcome! Initializing game ..."
@@ -34,18 +35,18 @@ class Game(object):
         print " * pygame"
 
         # Interface
-        self.window = pygame.display.set_mode((self.WINDOW_WIDTH, self.WINDOW_HEIGHT))
-        pygame.display.set_caption(self.WINDOW_TITLE)
+        self.window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        pygame.display.set_caption(WINDOW_TITLE)
         self.screen = pygame.display.get_surface()
-        pygame.key.set_repeat(self.KEY_DELAY, self.KEY_INTERVAL)
+        pygame.key.set_repeat(KEY_DELAY, KEY_INTERVAL)
 
         # Font. Freeware font from http://www.04.jp.org/
         font_file = os.path.join(DATA_DIR, "fonts", "04B_11__.TTF")
-        self.font = pygame.font.Font(font_file, self.FONT_SIZE)
-        self.big_font = pygame.font.Font(font_file, self.BIG_FONT_SIZE)
+        self.font = pygame.font.Font(font_file, FONT_SIZE)
+        self.big_font = pygame.font.Font(font_file, BIG_FONT_SIZE)
         title_file = os.path.join(DATA_DIR, "fonts", "04B_20__.TTF")
-        self.title_font = pygame.font.Font(title_file, self.TITLE_SIZE)
-        self.subtitle_font = pygame.font.Font(title_file, self.BIG_FONT_SIZE)
+        self.title_font = pygame.font.Font(title_file, TITLE_SIZE)
+        self.subtitle_font = pygame.font.Font(title_file, BIG_FONT_SIZE)
         print " * interface"
 
         self.display_splash("Loading ...")
@@ -55,8 +56,8 @@ class Game(object):
         print " * map"
 
         # Files
-        self.TEXT = {}
-        self.SPRITES = {}
+        self.texts = {}
+        self.sprites = {}
         self.init_files()
 
         # Sprites and agents
@@ -141,13 +142,13 @@ class Game(object):
         text_files = os.listdir(text_directory)
         for filename in text_files:
             name, ext = os.path.splitext(filename)
-            self.TEXT[name] = []
+            self.texts[name] = []
             f = open(os.path.join(text_directory, filename))
             for line in f:
-                self.TEXT[name].append(line.strip())
+                self.texts[name].append(line.strip())
             f.close()
         image_directory = os.path.join(DATA_DIR, "images")
-        self.SPRITES = os.path.join(image_directory, "lady_sprites.png")
+        self.sprites = os.path.join(image_directory, "lady_sprites.png")
 
     def init_controls(self):
         "Internal. Initialize the game controls."
@@ -162,11 +163,11 @@ class Game(object):
         controls.append(Control([KEYDOWN], [K_c], self.player.call))
 
         # Movement
-        controls.append(Control([KEYDOWN], self.LEFT_KEYS, self.player.walk, LEFT))
-        controls.append(Control([KEYDOWN], self.RIGHT_KEYS, self.player.walk, RIGHT))
-        controls.append(Control([KEYDOWN], self.UP_KEYS, self.player.walk, UP))
-        controls.append(Control([KEYDOWN], self.DOWN_KEYS, self.player.walk, DOWN))
-        controls.append(Control([KEYUP], self.LEFT_KEYS + self.RIGHT_KEYS + self.UP_KEYS + self.DOWN_KEYS, self.player.stand))
+        controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.walk, LEFT))
+        controls.append(Control([KEYDOWN], RIGHT_KEYS, self.player.walk, RIGHT))
+        controls.append(Control([KEYDOWN], UP_KEYS, self.player.walk, UP))
+        controls.append(Control([KEYDOWN], DOWN_KEYS, self.player.walk, DOWN))
+        controls.append(Control([KEYUP], LEFT_KEYS + RIGHT_KEYS + UP_KEYS + DOWN_KEYS, self.player.stand))
 
         # Appearance
         controls.append(Control([KEYDOWN], [K_1], self.player.set_sprite, 1))

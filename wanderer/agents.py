@@ -21,7 +21,7 @@ class Agent(object):
     def __init__(self, game, name = "Anonymous Agent", spriteno = None, location = None):
         super(Agent, self).__init__()
         self.game = game
-        self.TEXT = self.game.TEXT
+        self.texts = self.game.texts
         self.game.all_agents.append(self)
         self.name = name
         self.speed = self.SPEED
@@ -56,7 +56,7 @@ class Agent(object):
         charx = column * self.CHAR_WIDTH
         chary = row * self.CHAR_HEIGHT
         char_cursor = pygame.Rect(charx, chary, self.CHAR_WIDTH, self.CHAR_HEIGHT)
-        sprite_sheet = pygame.image.load(self.game.SPRITES).convert()
+        sprite_sheet = pygame.image.load(self.game.sprites).convert()
         char_sheet = sprite_sheet.subsurface(char_cursor)
         if hasattr(self, "sprite"):
             if not location:
@@ -180,7 +180,7 @@ class Agent(object):
     def greet(self, font = None):
         "Interject a random greeting."
         while True:
-            greeting = random.choice(self.TEXT["greetings"])
+            greeting = random.choice(self.texts["greetings"])
             if greeting not in self.last_greetings:
                 self.last_greetings.pop(0)
                 self.last_greetings.append(greeting)
@@ -197,7 +197,7 @@ class Player(Agent):
     def colliding_wall(self):
         "If we're out of bounds, complain about the wall bump."
         if super(Player, self).colliding_wall():
-            self.interject(random.choice(self.TEXT["ouches"]))
+            self.interject(random.choice(self.texts["ouches"]))
             return True
         return False
 
@@ -235,7 +235,7 @@ class Player(Agent):
         "Call out to all NPCs (triggered by a game.Control)"
         if font is None:
             font = self.game.big_font
-        self.interject(random.choice(self.TEXT["calls"]), font)
+        self.interject(random.choice(self.texts["calls"]), font)
         for npc in self.game.all_npcs:
             npc.called(self)
 
@@ -296,7 +296,7 @@ class Npc(Agent):
         "Excuse ourselves if we bump into a sprite."
         sprites = super(Npc, self).colliding_sprites()
         if sprites:
-            self.interject(random.choice(self.TEXT["polite"]))
+            self.interject(random.choice(self.texts["polite"]))
         return sprites
 
     def start_wandering(self):
