@@ -123,7 +123,7 @@ class Map(object):
 
     def seed(self, px_x, px_y):
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
-        self.player_modified.set_tile(x, y, Grass())
+        self.player_modified.set_tile(x, y, Diggable("grass"))
 
 
 class Layer(object):
@@ -352,29 +352,6 @@ class Tile(object):
         else:
             image = self.variants[self.bitmask]
         image.set_colorkey(COLOR_KEY)
-        return image
-
-
-class Grass(Tile):
-    def __init__(self):
-        super(Grass, self).__init__("grass")
-
-    def __repr__(self):
-        return '<Grass object "{}">'.format(self.name)
-
-    def duplicate(self):
-        return Grass()
-
-    def dig(self):
-        self.health -= 1
-        if self.health <= 2:
-            self.bitmask = 0
-            self.dirty = True
-        return True
-
-    @property
-    def image(self):
-        image = super(Grass, self).image
         """
         font = pygame.font.Font(os.path.join(DATA_DIR, "04B_11__.TTF"), 8)
         string_mask = "{:04b}".format(self.bitmask)
@@ -384,3 +361,18 @@ class Grass(Tile):
         image.blit(line2, (14, 16))
         """
         return image
+
+
+class Diggable(Tile):
+    def __repr__(self):
+        return '<Diggable object "{}">'.format(self.name)
+
+    def duplicate(self):
+        return Diggable(self.name)
+
+    def dig(self):
+        self.health -= 1
+        if self.health <= 2:
+            self.bitmask = 0
+            self.dirty = True
+        return True
