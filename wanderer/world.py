@@ -110,27 +110,20 @@ class Map(object):
     def dig(self, px_x, px_y):
         "Attempts to dig away a tile under the coordinates given."
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
+        diggable = False
         for layer in reversed(self.layers):
             # not using tiles_under because we need the layer info
             tile = layer.get_tile(x, y)
-            if not tile:
-                continue
-            if tile.name == "grass":
-                tile.health -= 4
-                if tile.health < 0:
-                    layer.set_tile(x, y, None)
-                else:
+            if tile:
+                diggable = tile.dig()
+                if diggable:
                     layer.dirty_tiles.append((x, y))
-                return True
-            else:
-                # we hit a non-grass tile
-                return False
-        # went all the way through the tile stack
-        return False
+                break
+        return diggable
 
     def seed(self, px_x, px_y):
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
-        self.player_modified.set_tile(x, y, Tile("grass"))
+        self.player_modified.set_tile(x, y, Grass())
 
 
 class Layer(object):
@@ -203,13 +196,11 @@ class Layer(object):
                 continue
             neighbor = self.get_tile(x+dx, y+dy)
             debug("in range. translation is {}, mask is {:b}".format(translation, mask))
-            if neighbor:
-                old_mask = neighbor.bitmask
-                debug("tile exists already, its mask is {:b}".format(old_mask))
-            else:
-                neighbor = Tile(new_tile.name, mask = 0)
-                old_mask = 0
+            if not neighbor:
+                neighbor = new_tile.duplicate()
+                neighbor.bitmask = 0
                 debug("no tile there, creating one with a blank mask")
+            old_mask = neighbor.bitmask
             new_mask = shift(new_tile.bitmask & mask) | (old_mask & ~shift(mask))
             debug("new mask is", new_mask)
             if new_mask != old_mask:
@@ -239,7 +230,13 @@ class Layer(object):
             tile = self.get_tile(x, y)
             self.surface.blit(blank, (px_x, px_y))
             if tile:
-                self.surface.blit(tile.image, (px_x, px_y))
+                if tile.health <= 0:
+                    self.set_tile(x, y, None)
+                elif tile.dirty:
+                    tile.dirty = False
+                    self.set_tile(x, y, tile)
+                else:
+                    self.surface.blit(tile.image, (px_x, px_y))
         self.dirty_tiles = []
         return True
 
@@ -270,12 +267,16 @@ class Layer(object):
 class Tile(object):
     "Information about a specific tile."
 
-    def __init__(self, name, nowalk = False, mask = 0b1111):
+    def __init__(self, name, nowalk = False):
         super(Tile, self).__init__()
         self.name = name
         self.nowalk = nowalk
-        self.bitmask = mask
+        self.bitmask = 0b1111
         self.health = 3.0
+        self.dirty = False
+        # this is a little different from a layer or map being dirty
+        # if a tile is dirty, the layer will set_tile it again
+        # (i.e. recalculate its neighbors' positions)
 
         tile_sheet = pygame.image.load(os.path.join(DATA_DIR, "images", "tiles", name + ".png"))
         tile_locations = {}
@@ -334,37 +335,52 @@ class Tile(object):
         self.spot[1] = tile_sheet.subsurface(cursor)
         self.spot[1].set_colorkey((COLOR_KEY))
 
-        self.variants[0] = self.spot[2]
-
     def __repr__(self):
         return '<Tile object "{}">'.format(self.name)
 
+    def duplicate(self):
+        return Tile(self.name, nowalk=self.nowalk)
+
+    def dig(self):
+        # to make a tile class diggable, override this and return True
+        return False
+
     @property
     def image(self):
-        """
-        if neighbor_mask == (0, 0, 0, 0):
-            self.health = min(self.health, 2)
+        if self.bitmask == 0:
+            image = self.spot[math.ceil(self.health)]
         else:
-            self.health = max(self.health, 3)
-
-        if self.health > 2:
-            self.image = self.variants[neighbor_mask]
-        else:
-            self.image = self.spot[math.ceil(self.health)]
-            neighbor_mask = (0, 0, 0, 0)
-        """
-
-        image = self.variants[self.bitmask]
-
-        """
-        if self.name == "grass":
-            font = pygame.font.Font(os.path.join(DATA_DIR, "04B_11__.TTF"), 8)
-            string_mask = "{:04b}".format(self.bitmask)
-            line1 = font.render(string_mask[:2], False, (100, 0, 0))
-            line2 = font.render(string_mask[2:], False, (100, 0, 0))
-            image.blit(line1, (14, 6))
-            image.blit(line2, (14, 16))
-        """
-
+            image = self.variants[self.bitmask]
         image.set_colorkey(COLOR_KEY)
+        return image
+
+
+class Grass(Tile):
+    def __init__(self):
+        super(Grass, self).__init__("grass")
+
+    def __repr__(self):
+        return '<Grass object "{}">'.format(self.name)
+
+    def duplicate(self):
+        return Grass()
+
+    def dig(self):
+        self.health -= 1
+        if self.health <= 2:
+            self.bitmask = 0
+            self.dirty = True
+        return True
+
+    @property
+    def image(self):
+        image = super(Grass, self).image
+        """
+        font = pygame.font.Font(os.path.join(DATA_DIR, "04B_11__.TTF"), 8)
+        string_mask = "{:04b}".format(self.bitmask)
+        line1 = font.render(string_mask[:2], False, (100, 0, 0))
+        line2 = font.render(string_mask[2:], False, (100, 0, 0))
+        image.blit(line1, (14, 6))
+        image.blit(line2, (14, 16))
+        """
         return image
