@@ -398,8 +398,9 @@ class Tile(object):
         # health info
         health_text = font.render(str(self.health), False, (250, 200, 200))
         index_text = font.render(str(health_index), False, (250, 200, 200))
-        image.blit(health_text, (14, 6))
-        image.blit(index_text, (14, 16))
+        if self.name == "dirt":
+            image.blit(health_text, (14, 6))
+            image.blit(index_text, (14, 16))
 
         # bitmask
         string_mask = "{:04b}".format(self.bitmask)
@@ -445,10 +446,8 @@ class Blocking(Tile):
 class Dirt(Diggable):
     def __init__(self):
         super(Dirt, self).__init__("dirt")
-        self.health_variants[4:7] = reversed(self.health_variants[4:7])
-        # I don't agree with how these are laid out on the sheet :P
         self.health_variants.pop(6)
-        # and this one is too conspicuous
+        # this one is too conspicuous
 
     def get_another(self):
         return Dirt()
@@ -482,6 +481,6 @@ class Hole(Tile):
         if self.bitmask:
             # something else may've set it, like nearby digging
             self.health = max(self.health, 3.0)
-        if not self.bitmask and self.health > 1 and self.health < 3:
+        if not self.bitmask and self.health > 1:
             return self.health_variants[int(math.floor(self.health))]
         return super(Hole, self).image
