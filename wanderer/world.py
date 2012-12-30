@@ -7,7 +7,7 @@ COLOR_KEY = (0, 0, 0)
 
 
 class Map(object):
-    "Stores data about the map. Initialize with the location of a map to load."
+    "Stores data about the map. Initialize with pixel width and height."
 
     def __init__(self, px_width, px_height):
         self.surface = pygame.Surface((px_width, px_height))
@@ -17,7 +17,7 @@ class Map(object):
         self.dirty = True
 
         self.layers = []
-        self.layers.append(Layer("water", self.width, self.height).fill(Tile, "water", True))
+        self.layers.append(Layer("water", self.width, self.height).fill(Blocking, "water"))
         self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Tile, "dirt"))
         self.layers.append(Layer("grass", self.width, self.height).set_rect((4, 4), (self.width-4, self.height-4), Diggable, "grass"))
 
@@ -59,7 +59,7 @@ class Map(object):
         return False
 
     def walkable_mask(self, sprite):
-        "Takes a sprite (with .image and .rect attributes), and returns True unless any non-alpha part of that sprite is on top of any visible part of a nowalk tile."
+        "Takes a sprite (with .image and .rect attributes), and returns True if all opaque parts of the sprite are over walkable map areas."
         if pygame.sprite.collide_mask(sprite, self.walk_mask):
             return False
         return True
@@ -75,10 +75,10 @@ class Map(object):
             tile_mask.set_colorkey(COLOR_KEY)
             for tile in self.tiles_under(x, y):
                 if tile:
-                    if tile.nowalk:
-                        tile_mask.fill(COLOR_KEY)
-                    else:
+                    if tile.walkable:
                         tile_mask.blit(tile.image, (0,0))
+                    else:
+                        tile_mask.fill(COLOR_KEY)
             # modified from source of pygame.surfarray.array_color_key
             # which turned out to be easier than just using it
             key_int = tile_mask.map_rgb(COLOR_KEY)
@@ -99,6 +99,15 @@ class Map(object):
             tiles.append(tile)
         return tiles
 
+    @property
+    def top_tile(self, x, y):
+        "Returns the top tile which exists under the coordinates given, or None if there aren't any."
+        for tile in reversed(self.tiles_under(x, y)):
+            if tile:
+                break
+        return tile
+        # if the loop runs out, we'll return None
+
     def dig(self, px_x, px_y):
         "Attempts to dig away a tile under the coordinates given."
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
@@ -114,6 +123,7 @@ class Map(object):
         return diggable
 
     def seed(self, px_x, px_y):
+        "Seeds some grass at the given coordinates."
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
         grass_layer = None
         for index, layer in enumerate(self.layers):
@@ -167,48 +177,48 @@ class Layer(object):
                 return
 
         bit_changes = []
-        # neighbors in cardinal directions
-        # plus bitshifts needed to update them
+        # the elements of a tuple in bit_changes are:
+        # - the translation needed to get to the neighbor tile
+        # - the bitmask of the bit(s) facing that direction
+        # - a function which shifts that mask
+        #   to the mask for the opposite direction
+
+        # cardinal directions
         bit_changes.append(((0, -1), 0b1100, lambda x: x >> 2))
         bit_changes.append(((0, 1), 0b0011, lambda x: x << 2))
         bit_changes.append(((-1, 0), 0b1010, lambda x: x >> 1))
         bit_changes.append(((1, 0), 0b0101, lambda x: x << 1))
+
         # diagonals
         bit_changes.append(((-1, -1), 0b1000, lambda x: x >> 3))
         bit_changes.append(((1, -1), 0b0100, lambda x: x >> 1))
         bit_changes.append(((-1, 1), 0b0010, lambda x: x << 1))
         bit_changes.append(((1, 1), 0b0001, lambda x: x << 3))
 
-        def debug(*args):
-            return
-            if new_tile.name == "grass":
-                for arg in args:
-                    print arg,
-                print
-
-        debug("\nplacing grass tile at", (x, y), "with bitmask {:b}".format(new_tile.bitmask))
         for translation, mask, shift in bit_changes:
             dx, dy = translation
-            debug("checking for neighbor tile at", (x+dx, y+dy))
             if x+dx not in xrange(self.left, self.left+self.width)\
               or y+dy not in xrange(self.top, self.top+self.height):
-                debug("out of range")
+                # the neighboring tile is off the edge of the layer
                 continue
+
             neighbor = self.get_tile(x+dx, y+dy)
-            debug("in range. translation is {}, mask is {:b}".format(translation, mask))
             if not neighbor:
-                neighbor = new_tile.duplicate()
+                # there isn't already a tile there; start one
+                neighbor = new_tile.get_another()
                 neighbor.bitmask = 0
-                debug("no tile there, creating one with a blank mask")
             old_mask = neighbor.bitmask
+
+            # copy the neighbor-facing bits from the tile we're placing
+            # into the new-tile-facing bits in the neighbor
             new_mask = shift(new_tile.bitmask & mask) | (old_mask & ~shift(mask))
-            debug("new mask is", new_mask)
             if new_mask != old_mask:
-                debug("it's changed, so replacing the tile")
                 neighbor.bitmask = new_mask
                 if new_mask:
                     self.tiles[(x+dx, y+dy)] = neighbor
                 else:
+                    # that tile was depending on this edge
+                    # and we removed it. destroy the tile, if it exists
                     if self.get_tile(x+dx, y+dy):
                         self.tiles.pop((x+dx, y+dy))
                 self.dirty_tiles.append((x+dx, y+dy))
@@ -241,13 +251,13 @@ class Layer(object):
         return True
 
     def fill(self, tile_type, *args):
-        "Fill the layer with instances of a Tile callable."
+        "Fill the layer with instances of a Tile callable, or None (clear it)."
         self.set_rect((self.left, self.top), (self.left+self.width, self.top+self.height), tile_type, *args)
         return self
         # ^ so we can initialize with layer = Layer(x, y).fill(tile)
 
     def set_row(self, y, tile_type, *args):
-        "Fill a row with instances of a Tile callable."
+        "Fill a row with instances of a Tile callable, or None (clear it)."
         for x in xrange(self.width):
             if tile_type:
                 tile = tile_type(*args)
@@ -257,7 +267,7 @@ class Layer(object):
         return self
 
     def set_column(self, x, tile_type, *args):
-        "Fill a column with instances of a Tile callable."
+        "Fill a column with instances of a Tile callable, or None (clear it)."
         for y in xrange(self.height):
             if tile_type:
                 tile = tile_type(*args)
@@ -267,6 +277,7 @@ class Layer(object):
         return self
 
     def set_rect(self, topleft, bottomright, tile_type, *args):
+        "Fill a rectangle with instances of a Tile callable, or None (clear it)."
         left, top = topleft
         right, bottom = bottomright
         for x in xrange(left, right):
@@ -280,18 +291,18 @@ class Layer(object):
 
 
 class Tile(object):
-    "Information about a specific tile."
+    "Generic class for map tile information. Takes a string name which should match the base name of a file in the tile images directory."
 
-    def __init__(self, name, nowalk = False):
+    def __init__(self, name):
         super(Tile, self).__init__()
         self.name = name
-        self.nowalk = nowalk
+        self.walkable = True
         self.bitmask = 0b1111
         self.health = 3.0
         self.dirty = False
-        # this is a little different from a layer or map being dirty
+        # this is a little different from a layer or map being dirty.
         # if a tile is dirty, the layer will set_tile it again
-        # (i.e. recalculate its neighbors' positions)
+        # (i.e. recalculate its neighbors' bitmasks to match)
 
         tile_sheet = pygame.image.load(os.path.join(DATA_DIR, "images", "tiles", name + ".png"))
         tile_locations = {}
@@ -350,18 +361,17 @@ class Tile(object):
         self.spot[1] = tile_sheet.subsurface(cursor)
         self.spot[1].set_colorkey((COLOR_KEY))
 
-    def __repr__(self):
-        return '<Tile object "{}">'.format(self.name)
-
-    def duplicate(self):
-        return Tile(self.name, nowalk=self.nowalk)
+    def get_another(self):
+        "Return another instance of this class (not a full copy)."
+        return Tile(self.name)
 
     def dig(self):
-        # to make a tile class diggable, override this and return True
+        "Defines dig behavior. To make a diggable tile class, override and return True."
         return False
 
     @property
     def image(self):
+        "Returns the tile's current image, defined by its bitmask and health."
         if self.bitmask == 0:
             image = self.spot[math.ceil(self.health)]
         else:
@@ -379,10 +389,8 @@ class Tile(object):
 
 
 class Diggable(Tile):
-    def __repr__(self):
-        return '<Diggable object "{}">'.format(self.name)
-
-    def duplicate(self):
+    "A Tile which deteriorates when dug (same arguments as Tile)."
+    def get_another(self):
         return Diggable(self.name)
 
     def dig(self):
@@ -391,3 +399,13 @@ class Diggable(Tile):
             self.bitmask = 0
             self.dirty = True
         return True
+
+
+class Blocking(Tile):
+    "A Tile which can't be walked over (same arguments as Tile)."
+    def __init__(self, name):
+        super(Blocking, self).__init__(name)
+        self.walkable = False
+
+    def get_another(self):
+        return Blocking(self.name)
