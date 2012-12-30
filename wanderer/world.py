@@ -44,13 +44,6 @@ class Map(object):
                 mask = self.get_tile_mask(x, y)
                 self.walk_mask.image.blit(mask, (x*TILE_SIZE, y*TILE_SIZE))
 
-    def walkable_rect(self, position):
-        "Takes a pygame.Rect, returns True iff all corners are on walkable points."
-        for corner in (position.topleft, position.bottomleft, position.topright, position.bottomright):
-            if not self.walkable_coords(*corner):
-                return False
-        return True
-
     def walkable_coords(self, px_x, px_y):
         "Returns True if the pixel at the coordinates given is walkable, False otherwise."
         pixel = self.walk_mask.image.get_at((px_x, px_y))[0:3]
