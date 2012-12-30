@@ -18,7 +18,12 @@ class Map(object):
 
         self.layers = []
         self.layers.append(Layer(self.width, self.height).fill(Tile, "water", True))
-        self.layers.append(Layer(self.width-2, self.height-2, 1, 1).fill(Tile, "dirt"))
+        dirt = Layer(self.width, self.height).fill(Tile, "dirt")
+        dirt.set_row(0, None)
+        dirt.set_row(self.height-1, None)
+        dirt.set_column(0, None)
+        dirt.set_column(self.width-1, None)
+        self.layers.append(dirt)
         # self.layers.append(Layer(self.width-4, self.height-4, 2, 2).fill(Tile, "grass"))
         self.player_modified = Layer(self.width, self.height)
         self.layers.append(self.player_modified)
@@ -168,28 +173,47 @@ class Layer(object):
                 return
 
         neighbors = {}
-        neighbors[(0, -1)] = 0b1100 & new_tile.bitmask >> 2
-        neighbors[(0, 1)] = 0b0011 & new_tile.bitmask << 2
-        neighbors[(-1, 0)] = 0b1010 & new_tile.bitmask >> 1
-        neighbors[(1, 0)] = 0b0101 & new_tile.bitmask << 1
+        neighbors[(0, -1)] = (0b1100 & new_tile.bitmask) >> 2
+        neighbors[(0, 1)] = (0b0011 & new_tile.bitmask) << 2
+        neighbors[(-1, 0)] = (0b1010 & new_tile.bitmask) >> 1
+        neighbors[(1, 0)] = (0b0101 & new_tile.bitmask) << 1
+        """
         neighbors[(1, -1)] = 0b0100 & new_tile.bitmask >> 1
         neighbors[(-1, 1)] = 0b0010 & new_tile.bitmask << 1
         neighbors[(-1, -1)] = 0b1000 & new_tile.bitmask >> 3
         neighbors[(1, 1)] = 0b0001 & new_tile.bitmask << 3
+        # I don't appear to need these? I'm skeptical.
+        # Keeping them around just in case.
+        """
 
+        def debug(*args):
+            return
+            if new_tile.name == "grass":
+                for arg in args:
+                    print arg,
+                print
+
+        debug("\nplacing grass tile at", (x, y), "with bitmask {:b}".format(new_tile.bitmask))
         for transformation, or_mask in neighbors.items():
             dx, dy = transformation
+            debug("checking for neighbor tile at", (x+dx, y+dy))
             if x+dx not in xrange(self.left, self.left+self.width)\
               or y+dy not in xrange(self.top, self.top+self.height):
+                debug("out of range")
                 continue
             neighbor = self.get_tile(x+dx, y+dy)
+            debug("in range. transformation is {}, or_mask is {:b}".format(transformation, or_mask))
             if neighbor:
                 old_mask = neighbor.bitmask
+                debug("tile exists already, its mask is {:b}".format(old_mask))
             else:
                 neighbor = Tile(new_tile.name, mask = 0)
                 old_mask = 0
+                debug("no tile there, creating one with a blank mask")
             new_mask = old_mask | or_mask
+            debug("new mask is", new_mask)
             if new_mask != old_mask:
+                debug("it's changed, so replacing the tile")
                 neighbor.bitmask = new_mask
                 self.set_tile(x+dx, y+dy, neighbor)
 
@@ -225,12 +249,17 @@ class Layer(object):
     def set_row(self, y, tile, *args):
         "Fill a row with instances of a Tile callable."
         for x in xrange(self.width):
-            self.set_tile(x, y, tile(*args))
+            if tile:
+                tile = tile(*args)
+                # as opposed to None to clear the spot
+            self.set_tile(x, y, tile)
 
     def set_column(self, x, tile, *args):
         "Fill a column with instances of a Tile callable."
         for y in xrange(self.height):
-            self.set_tile(x, y, tile(*args))
+            if tile:
+                tile = tile(*args)
+            self.set_tile(x, y, tile)
 
 
 class Tile(object):
