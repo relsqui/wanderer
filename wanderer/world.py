@@ -18,13 +18,8 @@ class Map(object):
 
         self.layers = []
         self.layers.append(Layer(self.width, self.height).fill(Tile, "water", True))
-        dirt = Layer(self.width, self.height).fill(Tile, "dirt")
-        dirt.set_row(0, None)
-        dirt.set_row(self.height-1, None)
-        dirt.set_column(0, None)
-        dirt.set_column(self.width-1, None)
-        self.layers.append(dirt)
-        # self.layers.append(Layer(self.width-4, self.height-4, 2, 2).fill(Tile, "grass"))
+        self.layers.append(Layer(self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Tile, "dirt"))
+        self.layers.append(Layer(self.width, self.height).set_rect((4, 4), (self.width-4, self.height-4), Diggable, "grass"))
         self.player_modified = Layer(self.width, self.height)
         self.layers.append(self.player_modified)
 
@@ -67,7 +62,6 @@ class Map(object):
 
     def walkable_mask(self, sprite):
         "Takes a sprite (with .image and .rect attributes), and returns True unless any non-alpha part of that sprite is on top of any visible part of a nowalk tile."
-        return True
         if pygame.sprite.collide_mask(sprite, self.walk_mask):
             return False
         return True
@@ -240,28 +234,43 @@ class Layer(object):
         self.dirty_tiles = []
         return True
 
-    def fill(self, tile, *args):
+    def fill(self, tile_type, *args):
         "Fill the layer with instances of a Tile callable."
-        for x in xrange(self.left, self.left + self.width):
-            for y in xrange(self.top, self.top + self.height):
-                self.set_tile(x, y, tile(*args))
+        self.set_rect((self.left, self.top), (self.left+self.width, self.top+self.height), tile_type, *args)
         return self
         # ^ so we can initialize with layer = Layer(x, y).fill(tile)
 
-    def set_row(self, y, tile, *args):
+    def set_row(self, y, tile_type, *args):
         "Fill a row with instances of a Tile callable."
         for x in xrange(self.width):
-            if tile:
-                tile = tile(*args)
-                # as opposed to None to clear the spot
+            if tile_type:
+                tile = tile_type(*args)
+            else:
+                tile = None
             self.set_tile(x, y, tile)
+        return self
 
-    def set_column(self, x, tile, *args):
+    def set_column(self, x, tile_type, *args):
         "Fill a column with instances of a Tile callable."
         for y in xrange(self.height):
-            if tile:
-                tile = tile(*args)
+            if tile_type:
+                tile = tile_type(*args)
+            else:
+                tile = None
             self.set_tile(x, y, tile)
+        return self
+
+    def set_rect(self, topleft, bottomright, tile_type, *args):
+        left, top = topleft
+        right, bottom = bottomright
+        for x in xrange(left, right):
+            for y in xrange(top, bottom):
+                if tile_type:
+                    tile = tile_type(*args)
+                else:
+                    tile = None
+                self.set_tile(x, y, tile)
+        return self
 
 
 class Tile(object):
