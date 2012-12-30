@@ -215,7 +215,11 @@ class Layer(object):
             if new_mask != old_mask:
                 debug("it's changed, so replacing the tile")
                 neighbor.bitmask = new_mask
-                self.tiles[(x+dx, y+dy)] = neighbor
+                if new_mask:
+                    self.tiles[(x+dx, y+dy)] = neighbor
+                else:
+                    if self.get_tile(x+dx, y+dy):
+                        self.tiles.pop((x+dx, y+dy))
                 self.dirty_tiles.append((x+dx, y+dy))
 
         if destroy_tile:
