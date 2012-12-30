@@ -425,12 +425,27 @@ class Hole(Tile):
     def __init__(self):
         super(Hole, self).__init__("hole")
         self.bitmask = 0
+        self.health = 0.5
+        # not 0 so we don't get erased
         self.superwalkable = True
 
     def get_another(self):
         return Hole()
 
     def dig(self):
-        self.bitmask = 0b1111
-        self.dirty = True
-        return True
+        if not self.bitmask:
+            # if we have a bitmask, we've already been dug
+            self.health += 1
+            # we gain health when dug, because we're a hole
+            if self.health >= 3:
+                self.bitmask = 0b1111
+            self.dirty = True
+            return True
+        return False
+
+    @property
+    def image(self):
+        if not self.bitmask and self.health > 1 and self.health < 3:
+            return self.spot[math.floor(self.health)]
+        else:
+            return super(Hole, self).image
