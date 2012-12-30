@@ -18,7 +18,7 @@ class Map(object):
 
         self.layers = []
         self.layers.append(Layer("water", self.width, self.height).fill(Blocking, "water"))
-        self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Tile, "dirt"))
+        self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Dirt))
         self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Hole))
         self.layers.append(Layer("grass", self.width, self.height).set_rect((4, 4), (self.width-4, self.height-4), Diggable, "grass"))
 
@@ -299,7 +299,7 @@ class Tile(object):
         # useful for invisible tiles, which otherwise block
         # even when they're set walkable (because they look like holes)
         self.bitmask = 0b1111
-        self.health = 3.0
+        self.health = random.randrange(3, 7)
         self.dirty = True
         # this is a little different from a layer or map being dirty.
         # if a tile is dirty, the layer will set_tile it again
@@ -310,7 +310,6 @@ class Tile(object):
 
         # center
         tile_locations[0b1111] = (1, 3)
-        # center variants in descending density: (0-2, 5)
 
         # corner
         tile_locations[0b0001] = (0, 2)
@@ -339,32 +338,38 @@ class Tile(object):
             y *= TILE_SIZE
             cursor.topleft = (x, y)
             self.variants[mask] = tile_sheet.subsurface(cursor)
-            self.variants[mask].set_colorkey(COLOR_KEY)
 
         # double corners
         nw_se = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        nw_se.set_colorkey(COLOR_KEY)
         nw_se.blit(self.variants[0b1000], (0, 0))
         nw_se.blit(self.variants[0b0001], (0, 0))
         self.variants[0b1001] = nw_se
 
         ne_sw = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        ne_sw.set_colorkey(COLOR_KEY)
         ne_sw.blit(self.variants[0b0100], (0, 0))
         ne_sw.blit(self.variants[0b0010], (0, 0))
         self.variants[0b0110] = ne_sw
 
-        self.spot = {}
-        cursor.topleft = (0, 0)
-        self.spot[2] = tile_sheet.subsurface(cursor)
-        self.spot[2].set_colorkey((COLOR_KEY))
-        cursor.topleft = (0, TILE_SIZE)
-        self.spot[1] = tile_sheet.subsurface(cursor)
-        self.spot[1].set_colorkey((COLOR_KEY))
-
         blank = pygame.Surface((TILE_SIZE, TILE_SIZE))
         blank.fill(COLOR_KEY)
         self.variants[0] = blank
+
+        self.health_variants = []
+        self.health_variants.append(blank)
+        # these are small, non-connecting (0b0000)
+        cursor.topleft = (0, TILE_SIZE)
+        self.health_variants.append(tile_sheet.subsurface(cursor))
+        cursor.topleft = (0, 0)
+        self.health_variants.append(tile_sheet.subsurface(cursor))
+
+        # these are dense and fully connecting (0b1111)
+        self.health_variants.append(self.variants[0b1111])
+        cursor.topleft = (2*TILE_SIZE, 5*TILE_SIZE)
+        self.health_variants.append(tile_sheet.subsurface(cursor))
+        cursor.topleft = (TILE_SIZE, 5*TILE_SIZE)
+        self.health_variants.append(tile_sheet.subsurface(cursor))
+        cursor.topleft = (0, 5*TILE_SIZE)
+        self.health_variants.append(tile_sheet.subsurface(cursor))
 
     def get_another(self):
         "Return another instance of this class (not a full copy)."
@@ -377,9 +382,26 @@ class Tile(object):
     @property
     def image(self):
         "Returns the tile's current image, defined by its bitmask and health."
-        image = self.variants[self.bitmask]
+        if self.bitmask == 0b1111:
+            health_index = int(math.ceil(self.health))
+            if health_index >= len(self.health_variants):
+                health_index = len(self.health_variants) - 1
+            image = self.health_variants[health_index]
+        else:
+            image = self.variants[self.bitmask]
+            health_index = ""
+
         """
+        # for printing debug data on the tile
         font = pygame.font.Font(os.path.join(DATA_DIR, "04B_11__.TTF"), 8)
+
+        # health info
+        health_text = font.render(str(self.health), False, (250, 200, 200))
+        index_text = font.render(str(health_index), False, (250, 200, 200))
+        image.blit(health_text, (14, 6))
+        image.blit(index_text, (14, 16))
+
+        # bitmask
         string_mask = "{:04b}".format(self.bitmask)
         line1 = font.render(string_mask[:2], False, (100, 0, 0))
         line2 = font.render(string_mask[2:], False, (100, 0, 0))
@@ -404,7 +426,7 @@ class Diggable(Tile):
     @property
     def image(self):
         if self.bitmask == 0:
-            image = self.spot[math.ceil(self.health)]
+            image = self.health_variants[int(math.ceil(self.health))]
         else:
             image = super(Diggable, self).image
         return image
@@ -420,6 +442,18 @@ class Blocking(Tile):
         return Blocking(self.name)
 
 
+class Dirt(Diggable):
+    def __init__(self):
+        super(Dirt, self).__init__("dirt")
+        self.health_variants[4:7] = reversed(self.health_variants[4:7])
+        # I don't agree with how these are laid out on the sheet :P
+        self.health_variants.pop(6)
+        # and this one is too conspicuous
+
+    def get_another(self):
+        return Dirt()
+
+
 class Hole(Tile):
     "A Tile which starts invisible and becomes a hole when dug. No arguments."
     def __init__(self):
@@ -433,19 +467,21 @@ class Hole(Tile):
         return Hole()
 
     def dig(self):
-        if not self.bitmask:
-            # if we have a bitmask, we've already been dug
-            self.health += 1
-            # we gain health when dug, because we're a hole
-            if self.health >= 3:
-                self.bitmask = 0b1111
-            self.dirty = True
+        if self.bitmask == 0b1111:
+            # don't need any more digging
             return True
-        return False
+        self.health += 1
+        # we gain health when dug, because we're a hole
+        if self.health >= 3 or self.bitmask:
+            self.bitmask = 0b1111
+        self.dirty = True
+        return True
 
     @property
     def image(self):
+        if self.bitmask:
+            # something else may've set it, like nearby digging
+            self.health = max(self.health, 3.0)
         if not self.bitmask and self.health > 1 and self.health < 3:
-            return self.spot[math.floor(self.health)]
-        else:
-            return super(Hole, self).image
+            return self.health_variants[int(math.floor(self.health))]
+        return super(Hole, self).image
