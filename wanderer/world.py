@@ -172,19 +172,11 @@ class Layer(object):
                 # unsetting a tile which didn't exist
                 return
 
-        neighbors = {}
-        neighbors[(0, -1)] = (0b1100 & new_tile.bitmask) >> 2
-        neighbors[(0, 1)] = (0b0011 & new_tile.bitmask) << 2
-        neighbors[(-1, 0)] = (0b1010 & new_tile.bitmask) >> 1
-        neighbors[(1, 0)] = (0b0101 & new_tile.bitmask) << 1
-        """
-        neighbors[(1, -1)] = 0b0100 & new_tile.bitmask >> 1
-        neighbors[(-1, 1)] = 0b0010 & new_tile.bitmask << 1
-        neighbors[(-1, -1)] = 0b1000 & new_tile.bitmask >> 3
-        neighbors[(1, 1)] = 0b0001 & new_tile.bitmask << 3
-        # I don't appear to need these? I'm skeptical.
-        # Keeping them around just in case.
-        """
+        bit_changes = []
+        bit_changes.append(((0, -1), 0b1100, lambda x: x >> 2))
+        bit_changes.append(((0, 1), 0b0011, lambda x: x << 2))
+        bit_changes.append(((-1, 0), 0b1010, lambda x: x >> 1))
+        bit_changes.append(((1, 0), 0b0101, lambda x: x << 1))
 
         def debug(*args):
             return
@@ -194,7 +186,7 @@ class Layer(object):
                 print
 
         debug("\nplacing grass tile at", (x, y), "with bitmask {:b}".format(new_tile.bitmask))
-        for transformation, or_mask in neighbors.items():
+        for transformation, mask, shift in bit_changes:
             dx, dy = transformation
             debug("checking for neighbor tile at", (x+dx, y+dy))
             if x+dx not in xrange(self.left, self.left+self.width)\
@@ -202,7 +194,7 @@ class Layer(object):
                 debug("out of range")
                 continue
             neighbor = self.get_tile(x+dx, y+dy)
-            debug("in range. transformation is {}, or_mask is {:b}".format(transformation, or_mask))
+            debug("in range. transformation is {}, mask is {:b}".format(transformation, mask))
             if neighbor:
                 old_mask = neighbor.bitmask
                 debug("tile exists already, its mask is {:b}".format(old_mask))
@@ -210,7 +202,7 @@ class Layer(object):
                 neighbor = Tile(new_tile.name, mask = 0)
                 old_mask = 0
                 debug("no tile there, creating one with a blank mask")
-            new_mask = old_mask | or_mask
+            new_mask = shift(new_tile.bitmask & mask) | (old_mask & mask)
             debug("new mask is", new_mask)
             if new_mask != old_mask:
                 debug("it's changed, so replacing the tile")
@@ -356,8 +348,8 @@ class Tile(object):
             string_mask = "{:04b}".format(self.bitmask)
             line1 = font.render(string_mask[:2], False, (100, 0, 0))
             line2 = font.render(string_mask[2:], False, (100, 0, 0))
-            image.blit(line1, (14, 2))
-            image.blit(line2, (14, 18))
+            image.blit(line1, (14, 6))
+            image.blit(line2, (14, 16))
 
         image.set_colorkey(COLOR_KEY)
         return image
