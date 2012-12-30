@@ -17,11 +17,9 @@ class Map(object):
         self.dirty = True
 
         self.layers = []
-        self.layers.append(Layer(self.width, self.height).fill(Tile, "water", True))
-        self.layers.append(Layer(self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Tile, "dirt"))
-        self.layers.append(Layer(self.width, self.height).set_rect((4, 4), (self.width-4, self.height-4), Diggable, "grass"))
-        self.player_modified = Layer(self.width, self.height)
-        self.layers.append(self.player_modified)
+        self.layers.append(Layer("water", self.width, self.height).fill(Tile, "water", True))
+        self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Tile, "dirt"))
+        self.layers.append(Layer("grass", self.width, self.height).set_rect((4, 4), (self.width-4, self.height-4), Diggable, "grass"))
 
         self.tile_masks = {} # to store masks cached by get_tile_mask
         self.walk_mask = pygame.sprite.Sprite()
@@ -117,14 +115,22 @@ class Map(object):
 
     def seed(self, px_x, px_y):
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
-        self.player_modified.set_tile(x, y, Diggable("grass"))
+        grass_layer = None
+        for index, layer in enumerate(self.layers):
+            if layer.name == "grass":
+                grass_layer = index
+                # not breaking, so we'll overwrite
+                # if for some reason there's more than one
+        if grass_layer:
+            self.layers[index].set_tile(x, y, Diggable("grass"))
 
 
 class Layer(object):
     "Stores a grid of tile objects and a surface which depicts them. Initialize with width and height in tiles."
 
-    def __init__(self, width, height, top=0, left=0):
+    def __init__(self, name, width, height, top=0, left=0):
         super(Layer, self).__init__()
+        self.name = name
         self.width = width
         self.height = height
         self.top = top
