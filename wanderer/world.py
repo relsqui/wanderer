@@ -19,6 +19,7 @@ class Map(object):
         self.layers = []
         self.layers.append(Layer("water", self.width, self.height).fill(Blocking, "water"))
         self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Tile, "dirt"))
+        self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Hole))
         self.layers.append(Layer("grass", self.width, self.height).set_rect((4, 4), (self.width-4, self.height-4), Diggable, "grass"))
 
         self.tile_masks = {} # to store masks cached by get_tile_mask
@@ -43,6 +44,8 @@ class Map(object):
             for y in xrange(self.height):
                 mask = self.get_tile_mask(x, y)
                 self.walk_mask.image.blit(mask, (x*TILE_SIZE, y*TILE_SIZE))
+        # self.surface.blit(self.walk_mask.image, (0, 0))
+        # ^ extremely useful for collision debugging
 
     def walkable_coords(self, px_x, px_y):
         "Returns True if the pixel at the coordinates given is walkable, False otherwise."
@@ -57,9 +60,9 @@ class Map(object):
             return False
         return True
 
-    def get_tile_mask(self, x, y, force = False):
+    def get_tile_mask(self, x, y):
         "Returns a pygame.Surface whose colorkey transparency values match the walkable status of the terrain at the given tile location. Caches these masks."
-        if force or not self.tile_masks.has_key((x, y)):
+        if not self.tile_masks.has_key((x, y)):
             if COLOR_KEY == (0, 0, 0):
                 new_color_key = (255, 255, 255)
             else:
@@ -67,7 +70,7 @@ class Map(object):
             tile_mask = pygame.Surface((TILE_SIZE, TILE_SIZE))
             tile_mask.set_colorkey(COLOR_KEY)
             for tile in self.tiles_under(x, y):
-                if tile:
+                if tile and not tile.superwalkable:
                     if tile.walkable:
                         tile_mask.blit(tile.image, (0,0))
                     else:
@@ -290,9 +293,14 @@ class Tile(object):
         super(Tile, self).__init__()
         self.name = name
         self.walkable = True
+        self.superwalkable = False
+        # superwalkable skips collision checking entirely
+        # instead of using a mask for this tile.
+        # useful for invisible tiles, which otherwise block
+        # even when they're set walkable (because they look like holes)
         self.bitmask = 0b1111
         self.health = 3.0
-        self.dirty = False
+        self.dirty = True
         # this is a little different from a layer or map being dirty.
         # if a tile is dirty, the layer will set_tile it again
         # (i.e. recalculate its neighbors' bitmasks to match)
@@ -354,6 +362,10 @@ class Tile(object):
         self.spot[1] = tile_sheet.subsurface(cursor)
         self.spot[1].set_colorkey((COLOR_KEY))
 
+        blank = pygame.Surface((TILE_SIZE, TILE_SIZE))
+        blank.fill(COLOR_KEY)
+        self.variants[0] = blank
+
     def get_another(self):
         "Return another instance of this class (not a full copy)."
         return Tile(self.name)
@@ -365,11 +377,7 @@ class Tile(object):
     @property
     def image(self):
         "Returns the tile's current image, defined by its bitmask and health."
-        if self.bitmask == 0:
-            image = self.spot[math.ceil(self.health)]
-        else:
-            image = self.variants[self.bitmask]
-        image.set_colorkey(COLOR_KEY)
+        image = self.variants[self.bitmask]
         """
         font = pygame.font.Font(os.path.join(DATA_DIR, "04B_11__.TTF"), 8)
         string_mask = "{:04b}".format(self.bitmask)
@@ -393,6 +401,14 @@ class Diggable(Tile):
             self.dirty = True
         return True
 
+    @property
+    def image(self):
+        if self.bitmask == 0:
+            image = self.spot[math.ceil(self.health)]
+        else:
+            image = super(Diggable, self).image
+        return image
+
 
 class Blocking(Tile):
     "A Tile which can't be walked over (same arguments as Tile)."
@@ -402,3 +418,19 @@ class Blocking(Tile):
 
     def get_another(self):
         return Blocking(self.name)
+
+
+class Hole(Tile):
+    "A Tile which starts invisible and becomes a hole when dug. No arguments."
+    def __init__(self):
+        super(Hole, self).__init__("hole")
+        self.bitmask = 0
+        self.superwalkable = True
+
+    def get_another(self):
+        return Hole()
+
+    def dig(self):
+        self.bitmask = 0b1111
+        self.dirty = True
+        return True
