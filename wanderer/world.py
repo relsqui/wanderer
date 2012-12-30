@@ -67,6 +67,7 @@ class Map(object):
 
     def walkable_mask(self, sprite):
         "Takes a sprite (with .image and .rect attributes), and returns True unless any non-alpha part of that sprite is on top of any visible part of a nowalk tile."
+        return True
         if pygame.sprite.collide_mask(sprite, self.walk_mask):
             return False
         return True
@@ -156,7 +157,7 @@ class Layer(object):
         return None
 
     def set_tile(self, x, y, tile):
-        "Set the tile at x, y to the given tile, or None (destroy it)."
+        "Change x, y to the given tile or None (remove it)."
         destroy_tile = False
         if tile:
             new_tile = tile
@@ -173,10 +174,17 @@ class Layer(object):
                 return
 
         bit_changes = []
+        # neighbors in cardinal directions
+        # plus bitshifts needed to update them
         bit_changes.append(((0, -1), 0b1100, lambda x: x >> 2))
         bit_changes.append(((0, 1), 0b0011, lambda x: x << 2))
         bit_changes.append(((-1, 0), 0b1010, lambda x: x >> 1))
         bit_changes.append(((1, 0), 0b0101, lambda x: x << 1))
+        # diagonals
+        bit_changes.append(((-1, -1), 0b1000, lambda x: x >> 3))
+        bit_changes.append(((1, -1), 0b0100, lambda x: x >> 1))
+        bit_changes.append(((-1, 1), 0b0010, lambda x: x << 1))
+        bit_changes.append(((1, 1), 0b0001, lambda x: x << 3))
 
         def debug(*args):
             return
@@ -186,15 +194,15 @@ class Layer(object):
                 print
 
         debug("\nplacing grass tile at", (x, y), "with bitmask {:b}".format(new_tile.bitmask))
-        for transformation, mask, shift in bit_changes:
-            dx, dy = transformation
+        for translation, mask, shift in bit_changes:
+            dx, dy = translation
             debug("checking for neighbor tile at", (x+dx, y+dy))
             if x+dx not in xrange(self.left, self.left+self.width)\
               or y+dy not in xrange(self.top, self.top+self.height):
                 debug("out of range")
                 continue
             neighbor = self.get_tile(x+dx, y+dy)
-            debug("in range. transformation is {}, mask is {:b}".format(transformation, mask))
+            debug("in range. translation is {}, mask is {:b}".format(translation, mask))
             if neighbor:
                 old_mask = neighbor.bitmask
                 debug("tile exists already, its mask is {:b}".format(old_mask))
@@ -202,12 +210,13 @@ class Layer(object):
                 neighbor = Tile(new_tile.name, mask = 0)
                 old_mask = 0
                 debug("no tile there, creating one with a blank mask")
-            new_mask = shift(new_tile.bitmask & mask) | (old_mask & mask)
+            new_mask = shift(new_tile.bitmask & mask) | (old_mask & ~shift(mask))
             debug("new mask is", new_mask)
             if new_mask != old_mask:
                 debug("it's changed, so replacing the tile")
                 neighbor.bitmask = new_mask
-                self.set_tile(x+dx, y+dy, neighbor)
+                self.tiles[(x+dx, y+dy)] = neighbor
+                self.dirty_tiles.append((x+dx, y+dy))
 
         if destroy_tile:
             self.tiles.pop((x, y))
@@ -343,6 +352,7 @@ class Tile(object):
 
         image = self.variants[self.bitmask]
 
+        """
         if self.name == "grass":
             font = pygame.font.Font(os.path.join(DATA_DIR, "04B_11__.TTF"), 8)
             string_mask = "{:04b}".format(self.bitmask)
@@ -350,6 +360,7 @@ class Tile(object):
             line2 = font.render(string_mask[2:], False, (100, 0, 0))
             image.blit(line1, (14, 6))
             image.blit(line2, (14, 16))
+        """
 
         image.set_colorkey(COLOR_KEY)
         return image
