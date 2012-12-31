@@ -29,13 +29,8 @@ class Game(object):
     """
 
     def __init__(self):
-        print "Welcome! Initializing game ..."
         super(Game, self).__init__()
-        pygame.init()
-        if not pygame.font:
-            print "Couldn't load pygame.font!"
-            sys.exit(1)
-        print " * pygame"
+        self.finished = False
 
         # Interface
         self.window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -85,6 +80,7 @@ class Game(object):
                     break
                 if event.key is K_q:
                     self.quit()
+                    break
 
     def display_splash(self, message = None, small_message = None):
         def centered(surface):
@@ -213,8 +209,7 @@ class Game(object):
 
     def quit(self):
         "Exit the game politely."
-        print "Goodbye!"
-        sys.exit(0)
+        self.finished = True
 
 
 class Control(object):
