@@ -25,6 +25,7 @@ class Agent(object):
         self.game.all_agents.append(self)
         self.name = name
         self.speed = self.SPEED
+        self.holding = None
 
         self.last_greetings = [None for x in xrange(5)]
         self.interject_ok = True
@@ -162,7 +163,7 @@ class Agent(object):
         "Emit a message as a floating particle."
         if font is None:
             font = self.game.font
-        offset = -1 * (self.sprite.rect.height/2 + self.game.FONT_SIZE/2 + 2)
+        offset = -1 * (self.sprite.rect.height/2 + font.get_height()/2 + 2)
         location = self.sprite.rect.move(0, offset)
         self.game.all_particles.add(particles.TextParticle(font, message, location))
 
@@ -186,6 +187,20 @@ class Agent(object):
                 self.last_greetings.append(greeting)
                 break
         self.interject(greeting, font)
+
+    def place(self):
+        px_x, px_y = self.sprite.rect.center
+        if self.holding:
+            return self.game.map.place(px_x, px_y, self.holding)
+        return False
+
+    def pick_up(self):
+        px_x, px_y = self.sprite.rect.center
+        item = self.game.map.pick_up(px_x, px_y)
+        if item:
+            self.holding = item
+            return True
+        return False
 
 
 class Player(Agent):
@@ -239,13 +254,27 @@ class Player(Agent):
         for npc in self.game.all_npcs:
             npc.called(self)
 
-    def dig(self):
-        "Attempt to dig underneath the sprite."
-        self.game.map.dig(*self.sprite.rect.center)
+    def place(self):
+        if self.holding:
+            result = super(Player, self).place()
+            if result:
+                self.interject("I placed {}.".format(self.holding.name))
+            else:
+                self.interject("I can't put {} here.".format(self.holding.name))
+        else:
+            self.interject("I'm not holding anything.")
 
-    def seed(self):
-        "Attempt to seed grass underneath the sprite."
-        self.game.map.seed(*self.sprite.rect.center)
+    def pick_up(self):
+        if super(Player, self).pick_up():
+            self.inventory()
+        else:
+            self.interject("I can't pick up anything here.")
+
+    def inventory(self):
+        if self.holding:
+            self.interject("I'm carrying {}.".format(self.holding.name))
+        else:
+            self.interject("I'm not carrying anything.")
 
 
 class Npc(Agent):

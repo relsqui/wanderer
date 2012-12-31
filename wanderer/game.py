@@ -6,6 +6,9 @@ FONT_SIZE = 8       # point
 BIG_FONT_SIZE = 16  # point
 TITLE_SIZE = 32     # point
 
+SPLASH_FILL_COLOR = (0, 160, 175)
+SPLASH_TEXT_COLOR = (235, 180, 215)
+
 WINDOW_HEIGHT = 640 # pixels (starting)
 WINDOW_WIDTH = 640  # pixels (starting)
 WINDOW_TITLE = "Wanderer"
@@ -77,16 +80,19 @@ class Game(object):
         self.display_splash("Ready!", "(hit enter)")
         while True:
             event = pygame.event.wait()
-            if event.type in [KEYDOWN, KEYUP] and event.key is K_RETURN:
-                break
+            if event.type in [KEYDOWN, KEYUP]:
+                if event.key is K_RETURN:
+                    break
+                if event.key is K_q:
+                    self.quit()
 
     def display_splash(self, message = None, small_message = None):
         def centered(surface):
             return self.screen.get_rect().width/2 - surface.get_rect().width/2
-        title_color = (200, 250, 200)
-        self.screen.fill((10, 100, 250))
+        title_color = SPLASH_TEXT_COLOR
+        self.screen.fill(SPLASH_FILL_COLOR)
         title = self.title_font.render("Wanderer", False, title_color)
-        subtitle = self.subtitle_font.render("a very simple world", False, title_color)
+        subtitle = self.subtitle_font.render("in a simple world", False, title_color)
         self.screen.blit(title, (centered(title), 100))
         self.screen.blit(subtitle, (centered(subtitle), 200))
 
@@ -155,12 +161,14 @@ class Game(object):
         controls = []
         handlers = dict()
 
-        # Quit
-        controls.append(Control([QUIT, KEYDOWN], [K_q], self.quit))
-
         # Speech
         controls.append(Control([KEYDOWN], [K_SPACE], self.player.greet))
         controls.append(Control([KEYDOWN], [K_c], self.player.call))
+
+        # Inventory
+        controls.append(Control([KEYDOWN], [K_p], self.player.place))
+        controls.append(Control([KEYDOWN], [K_u], self.player.pick_up))
+        controls.append(Control([KEYDOWN], [K_i], self.player.inventory))
 
         # Movement
         controls.append(Control([KEYDOWN], LEFT_KEYS, self.player.walk, LEFT))
@@ -180,9 +188,18 @@ class Game(object):
         controls.append(Control([KEYDOWN], [K_8], self.player.set_sprite, 8))
 
         # Miscellaneous
+        controls.append(Control([QUIT, KEYDOWN], [K_q], self.quit))
         controls.append(Control([KEYDOWN], [K_n], agents.Npc, self))
-        controls.append(Control([KEYDOWN], [K_d], self.player.dig))
-        controls.append(Control([KEYDOWN], [K_s], self.player.seed))
+
+        # Debug
+        def p(*args):
+            # cheeeeeats
+            # if I were using py3 print, I wouldn't have to do this
+            # but I'm not
+            for arg in args:
+                print arg,
+            print
+        controls.append(Control([KEYDOWN], [K_t], lambda: p(self.map.tiles_under(self.player.sprite.rect.centerx/32, self.player.sprite.rect.centery/32))))
 
         for control in controls:
             for event in control.events:

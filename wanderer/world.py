@@ -19,7 +19,7 @@ class Map(object):
         self.layers = []
         self.layers.append(Layer("water", self.width, self.height).fill(Blocking, "water"))
         self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Dirt))
-        self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Hole))
+        self.layers.append(Layer("hole", self.width, self.height).fill(Hole))
         self.layers.append(Layer("grass", self.width, self.height).set_rect((4, 4), (self.width-4, self.height-4), Diggable, "grass"))
 
         self.tile_masks = {} # to store masks cached by get_tile_mask
@@ -95,7 +95,6 @@ class Map(object):
             tiles.append(tile)
         return tiles
 
-    @property
     def top_tile(self, x, y):
         "Returns the top tile which exists under the coordinates given, or None if there aren't any."
         for tile in reversed(self.tiles_under(x, y)):
@@ -104,31 +103,19 @@ class Map(object):
         return tile
         # if the loop runs out, we'll return None
 
-    def dig(self, px_x, px_y):
-        "Attempts to dig away a tile under the coordinates given."
+    def place(self, px_x, px_y, item):
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
-        diggable = False
-        for layer in reversed(self.layers):
-            # not using tiles_under because we need the layer info
-            tile = layer.get_tile(x, y)
-            if tile:
-                diggable = tile.dig()
-                if diggable:
-                    layer.dirty_tiles.append((x, y))
-                break
-        return diggable
+        tile = self.top_tile(x, y)
+        if tile:
+            return tile.place(item)
+        return False
 
-    def seed(self, px_x, px_y):
-        "Seeds some grass at the given coordinates."
+    def pick_up(self, px_x, px_y):
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
-        grass_layer = None
-        for index, layer in enumerate(self.layers):
-            if layer.name == "grass":
-                grass_layer = index
-                # not breaking, so we'll overwrite
-                # if for some reason there's more than one
-        if grass_layer:
-            self.layers[index].set_tile(x, y, Diggable("grass"))
+        tile = self.top_tile(x, y)
+        if tile:
+            return tile.pick_up()
+        return None
 
 
 class Layer(object):
@@ -148,6 +135,10 @@ class Layer(object):
         self.surface = pygame.Surface(px_size)
         self.surface.set_colorkey(COLOR_KEY)
         self.dirty_tiles = []
+        # we're storing dirty tiles at the layer level
+        # because sometimes what's dirty is the *lack* of tile.
+        # tiles *also* have a dirty attribute, but it means
+        # "update my neighbors/edges" not just "redraw me"
 
     def get_tile(self, x, y):
         "Return the tile at position x, y or None if there is none."
@@ -157,6 +148,16 @@ class Layer(object):
 
     def set_tile(self, x, y, tile):
         "Change x, y to the given tile or None (remove it)."
+        """
+        # simple version for testing
+        if tile:
+            self.tiles[(x, y)] = tile
+        else:
+            self.remove_tile(x, y)
+        self.dirty_tiles.append((x, y))
+        return
+        """
+
         destroy_tile = False
         if tile:
             new_tile = tile
@@ -209,24 +210,30 @@ class Layer(object):
             # into the new-tile-facing bits in the neighbor
             new_mask = shift(new_tile.bitmask & mask) | (old_mask & ~shift(mask))
             if new_mask != old_mask:
-                neighbor.bitmask = new_mask
+                neighbor.update(bitmask = new_mask)
                 if new_mask:
                     self.tiles[(x+dx, y+dy)] = neighbor
                 else:
                     # that tile was depending on this edge
                     # and we removed it. destroy the tile, if it exists
+                    # (and isn't immortal)
                     if self.get_tile(x+dx, y+dy):
-                        self.tiles.pop((x+dx, y+dy))
+                        self.remove_tile(x+dx, y+dy)
                 self.dirty_tiles.append((x+dx, y+dy))
 
         if destroy_tile:
-            self.tiles.pop((x, y))
+            self.remove_tile(x, y)
         self.dirty_tiles.append((x, y))
+
+    def remove_tile(self, x, y):
+        tile = self.get_tile(x, y)
+        if tile and not tile.immortal:
+            self.tiles.pop((x, y))
 
     def update(self):
         "Redraw tiles at any changed locations."
         if not self.dirty_tiles:
-            return False
+            return
         blank = pygame.Surface((TILE_SIZE, TILE_SIZE))
         blank.fill(COLOR_KEY)
         for location in self.dirty_tiles:
@@ -237,14 +244,13 @@ class Layer(object):
             self.surface.blit(blank, (px_x, px_y))
             if tile:
                 if tile.health <= 0:
-                    self.set_tile(x, y, None)
+                    self.remove_tile(x, y)
                 elif tile.dirty:
                     tile.dirty = False
                     self.set_tile(x, y, tile)
                 else:
                     self.surface.blit(tile.image, (px_x, px_y))
         self.dirty_tiles = []
-        return True
 
     def fill(self, tile_type, *args):
         "Fill the layer with instances of a Tile callable, or None (clear it)."
@@ -294,16 +300,14 @@ class Tile(object):
         self.name = name
         self.walkable = True
         self.superwalkable = False
-        # superwalkable skips collision checking entirely
-        # instead of using a mask for this tile.
-        # useful for invisible tiles, which otherwise block
-        # even when they're set walkable (because they look like holes)
+        # "walkable" means the opaque parts of the tile are walkable
+        # "superwalkable" means the whole tile is walkable
+        self.immortal = False
         self.bitmask = 0b1111
         self.health = random.randrange(3, 7)
         self.dirty = True
-        # this is a little different from a layer or map being dirty.
-        # if a tile is dirty, the layer will set_tile it again
-        # (i.e. recalculate its neighbors' bitmasks to match)
+        # unlike the map and layers, dirty tiles aren't just redrawn
+        # they're re-set, so their neighbors' bitmasks are recalculated
 
         tile_sheet = pygame.image.load(os.path.join(DATA_DIR, "images", "tiles", name + ".png"))
         tile_locations = {}
@@ -375,40 +379,69 @@ class Tile(object):
         "Return another instance of this class (not a full copy)."
         return Tile(self.name)
 
-    def dig(self):
-        "Defines dig behavior. To make a diggable tile class, override and return True."
+    def pick_up(self):
+        "Returns an object to be given to the player when this tile is picked up."
+        return None
+
+    def place(self, item):
+        "Defines behavior when an object is placed here; returns True if the placement was successful, False otherwise."
         return False
+
+    def update(self, bitmask = None, health = None):
+        if bitmask is not None:
+            self.bitmask = bitmask
+        if health is not None:
+            self.health = health
+        self.dirty = True
+        # we can do other interrelated modifications later
 
     @property
     def image(self):
         "Returns the tile's current image, defined by its bitmask and health."
-        if self.bitmask == 0b1111:
-            health_index = int(math.ceil(self.health))
-            if health_index >= len(self.health_variants):
-                health_index = len(self.health_variants) - 1
+        font = pygame.font.Font(os.path.join(DATA_DIR, "fonts", "04B_11__.TTF"), 8)
+        color = (250, 200, 200)
+
+        # these blit useful debug data on top of tiles
+
+        def debug_bitmask(name=None):
+            if not name or self.name == name:
+                string_mask = "{:04b}".format(self.bitmask)
+                line1 = font.render(string_mask[:2], False, color)
+                line2 = font.render(string_mask[2:], False, color)
+                image.blit(line1, (14, 6))
+                image.blit(line2, (14, 16))
+
+        def debug_health(name=None):
+            if not name or self.name == name:
+                if name == "hole":
+                    h = 1
+                else:
+                    h = 0
+                health_text = font.render(str(self.health+h), False, color)
+                index_text = font.render(str(health_index), False, color)
+                image.blit(health_text, (14, 6))
+                image.blit(index_text, (14, 16))
+
+        """
+        if self.health >= 3.0 and not self.bitmask:
+            self.bitmask = 0b0000
+            self.dirty = True
+
+        if self.health < 1 and self.bitmask:
+            self.health = 0.0
+            self.bitmask = 0b0000
+            self.dirty = True
+        """
+
+        if self.bitmask == 0b1111 or self.bitmask == 0b0000:
+            health_index = min(int(math.floor(self.health)), len(self.health_variants)-1)
             image = self.health_variants[health_index]
         else:
             image = self.variants[self.bitmask]
-            health_index = ""
+            health_index = "-" # for debug printing
 
-        """
-        # for printing debug data on the tile
-        font = pygame.font.Font(os.path.join(DATA_DIR, "04B_11__.TTF"), 8)
+        # put debug calls here
 
-        # health info
-        health_text = font.render(str(self.health), False, (250, 200, 200))
-        index_text = font.render(str(health_index), False, (250, 200, 200))
-        if self.name == "dirt":
-            image.blit(health_text, (14, 6))
-            image.blit(index_text, (14, 16))
-
-        # bitmask
-        string_mask = "{:04b}".format(self.bitmask)
-        line1 = font.render(string_mask[:2], False, (100, 0, 0))
-        line2 = font.render(string_mask[2:], False, (100, 0, 0))
-        image.blit(line1, (14, 6))
-        image.blit(line2, (14, 16))
-        """
         return image
 
 
@@ -417,20 +450,17 @@ class Diggable(Tile):
     def get_another(self):
         return Diggable(self.name)
 
-    def dig(self):
+    def pick_up(self):
         self.health -= 1
-        if self.health <= 2:
-            self.bitmask = 0
-            self.dirty = True
-        return True
+        self.dirty = True
+        return self.get_another()
 
-    @property
-    def image(self):
-        if self.bitmask == 0:
-            image = self.health_variants[int(math.ceil(self.health))]
-        else:
-            image = super(Diggable, self).image
-        return image
+    def place(self, item):
+        if item.name == self.name:
+            self.health += 1
+            self.dirty = True
+            return True
+        return False
 
 
 class Blocking(Tile):
@@ -443,7 +473,7 @@ class Blocking(Tile):
         return Blocking(self.name)
 
 
-class Dirt(Diggable):
+class Dirt(Tile):
     def __init__(self):
         super(Dirt, self).__init__("dirt")
         self.health_variants.pop(6)
@@ -458,29 +488,21 @@ class Hole(Tile):
     def __init__(self):
         super(Hole, self).__init__("hole")
         self.bitmask = 0
-        self.health = 0.5
-        # not 0 so we don't get erased
+        self.health = 0.0
         self.superwalkable = True
+        self.immortal = True
 
     def get_another(self):
         return Hole()
 
-    def dig(self):
-        if self.bitmask == 0b1111:
-            # don't need any more digging
-            return True
+    def pick_up(self):
         self.health += 1
-        # we gain health when dug, because we're a hole
-        if self.health >= 3 or self.bitmask:
-            self.bitmask = 0b1111
         self.dirty = True
-        return True
+        return self.get_another()
 
-    @property
-    def image(self):
-        if self.bitmask:
-            # something else may've set it, like nearby digging
-            self.health = max(self.health, 3.0)
-        if not self.bitmask and self.health > 1:
-            return self.health_variants[int(math.floor(self.health))]
-        return super(Hole, self).image
+    def place(self, item):
+        if item.name == self.name:
+            self.health -= 1
+            self.dirty = True
+            return True
+        return False
