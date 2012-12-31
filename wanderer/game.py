@@ -47,8 +47,10 @@ class Game(object):
         self.subtitle_font = pygame.font.Font(title_file, BIG_FONT_SIZE)
         print " * interface"
 
+        # (this is the earliest we can display the splash screen)
         self.display_splash("Loading ...")
 
+        # Map
         self.map = world.Map(640, 640)
         self.screen.blit(self.map.surface, (0,0))
         print " * map"
