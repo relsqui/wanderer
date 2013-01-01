@@ -144,23 +144,13 @@ class Layer(object):
 
     def set_tile(self, x, y, tile):
         "Change x, y to the given tile or None (remove it)."
-        """
-        # simple version for testing
-        if tile:
-            self.tiles[(x, y)] = tile
-            tile.dirty = True
-        else:
-            tile.kill = True
-        return
-        """
 
         if tile:
             new_tile = tile
             self.tiles[(x, y)] = new_tile
         else:
             if self.get_tile(x, y):
-                # unsetting a tile which did exist
-                # clear its neighbors first
+                # unsetting a tile, clear its neighbors
                 new_tile = self.get_tile(x, y)
                 new_tile.bitmask = 0
                 new_tile.kill = True
@@ -168,7 +158,6 @@ class Layer(object):
                 # unsetting a tile which didn't exist
                 return
         self.dirty = True
-        # new tile is set, the rest of this is updating neighbors
 
         bit_changes = []
         # the elements of a tuple in bit_changes are:
@@ -206,10 +195,11 @@ class Layer(object):
             # copy the neighbor-facing bits from the tile we're placing
             # into the new-tile-facing bits in the neighbor
             new_mask = shift(new_tile.bitmask & mask) | (old_mask & ~shift(mask))
-            if new_mask != old_mask:
-                neighbor.update(bitmask = new_mask)
-                neighbor.dirty = True
-                self.tiles[(x+dx, y+dy)] = neighbor
+            # update the tile, remove if it disappeared
+            if neighbor.update(bitmask = new_mask) and not neighbor.bitmask:
+                    neighbor.update(health = 0)
+            # place our maybe-newly-created tile
+            self.tiles[(x+dx, y+dy)] = neighbor
 
     def remove_tile(self, x, y):
         tile = self.get_tile(x, y)
@@ -232,6 +222,8 @@ class Layer(object):
                 if tile.kill:
                     self.remove_tile(x, y)
                 else:
+                    # update its neighbors
+                    self.set_tile(x, y, tile)
                     self.surface.blit(tile.image, (px_x, px_y))
                     tile.dirty = False
 
@@ -372,16 +364,29 @@ class Tile(object):
 
     def update(self, bitmask = None, health = None):
         old_mask, old_health = (self.bitmask, self.health)
+
         if bitmask is not None:
             self.bitmask = bitmask
+            if self.bitmask == 0b1111:
+                self.health = max(self.health, 3)
+            else:
+                self.health = min(self.health, 2)
+
         if health is not None:
             self.health = health
             if self.health < self.health_min:
                 self.health = self.health_min
             elif self.health > self.health_max:
                 self.health = self.health_max
-        if not self.health and not self.immortal:
-            self.kill = True
+
+            if self.health < 3 and self.bitmask:
+                self.bitmask = 0
+            elif self.health >= 3:
+                self.bitmask = 0b1111
+
+            if not self.health and not self.immortal:
+                self.kill = True
+
         if self.bitmask == old_mask and self.health == old_health:
             return False
         else:
@@ -411,18 +416,6 @@ class Tile(object):
                 image.blit(health_text, (14, 6))
                 image.blit(index_text, (14, 16))
 
-        """
-        # saving this until I move the relevant logic to update()
-        if self.health >= 3.0 and not self.bitmask:
-            self.bitmask = 0b0000
-            self.dirty = True
-
-        if self.health < 1 and self.bitmask:
-            self.health = 0.0
-            self.bitmask = 0b0000
-            self.dirty = True
-        """
-
         if self.bitmask == 0b1111 or self.bitmask == 0b0000:
             health_index = min(int(math.floor(self.health)), len(self.health_variants)-1)
             image = self.health_variants[health_index]
@@ -430,7 +423,6 @@ class Tile(object):
             image = self.variants[self.bitmask]
             health_index = "-" # for debug printing
 
-        debug_health("grass")
         # put debug calls here
 
         return image
@@ -489,12 +481,17 @@ class Hole(Tile):
         return Hole()
 
     def pick_up(self):
-        if self.update(health = self.health+1):
+        if self.bitmask == 0 or self.bitmask == 0b1111:
+            new_health = self.health + 1
+        else:
+            # we're already half-dug, skip the incremental
+            new_health = self.health_max
+        if self.update(health = new_health):
             return Dirt()
         else:
             return False
 
     def place(self, item):
         if item.name == "dirt":
-            return self.update(health = self.health-1)
+            return self.update(health = self.health_min)
         return False
