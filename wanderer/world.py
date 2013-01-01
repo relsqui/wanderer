@@ -33,8 +33,8 @@ class Map(object):
     def update(self):
         "Redraw the map surface and walk mask."
         for index, layer in enumerate(self.layers):
+            layer.update()
             if layer.dirty:
-                layer.update()
                 self.dirty = True
             self.surface.blit(layer.surface, layer.rect)
             # everybody gets blitted, in case a
@@ -225,6 +225,7 @@ class Layer(object):
                 tile = self.get_tile(x, y)
                 if not tile or not (tile.dirty or tile.kill):
                     continue
+                self.dirty = True
                 px_x = (x - self.left) * TILE_SIZE
                 px_y = (y - self.top) * TILE_SIZE
                 self.surface.blit(blank, (px_x, px_y))
@@ -233,7 +234,6 @@ class Layer(object):
                 else:
                     self.surface.blit(tile.image, (px_x, px_y))
                     tile.dirty = False
-        self.dirty = False
 
     def fill(self, tile_type, *args):
         "Fill the layer with instances of a Tile callable, or None (clear it)."
@@ -278,7 +278,9 @@ class Tile(object):
         super(Tile, self).__init__()
         self.name = name
         self.bitmask = 0b1111
-        self.health = random.randrange(3, 7)
+        self.health_min = 0
+        self.health_max = 7
+        self.health = random.randrange(3, self.health_max)
         self.walkable = True
         # if True, the opaque parts of the tile are walkable
         self.superwalkable = False
@@ -369,14 +371,22 @@ class Tile(object):
         return False
 
     def update(self, bitmask = None, health = None):
+        old_mask, old_health = (self.bitmask, self.health)
         if bitmask is not None:
             self.bitmask = bitmask
         if health is not None:
             self.health = health
-        if self.health <= 0 and not self.immortal:
+            if self.health < self.health_min:
+                self.health = self.health_min
+            elif self.health > self.health_max:
+                self.health = self.health_max
+        if not self.health and not self.immortal:
             self.kill = True
-        self.dirty = True
-        # we can do other interrelated modifications later
+        if self.bitmask == old_mask and self.health == old_health:
+            return False
+        else:
+            self.dirty = True
+            return True
 
     @property
     def image(self):
@@ -420,6 +430,7 @@ class Tile(object):
             image = self.variants[self.bitmask]
             health_index = "-" # for debug printing
 
+        debug_health("grass")
         # put debug calls here
 
         return image
@@ -431,15 +442,14 @@ class Diggable(Tile):
         return Diggable(self.name)
 
     def pick_up(self):
-        self.health -= 1
-        self.dirty = True
-        return self.get_another()
+        if self.update(health=self.health-1):
+            return self.get_another()
+        else:
+            return None
 
     def place(self, item):
         if item.name == self.name:
-            self.health += 1
-            self.dirty = True
-            return True
+            return self.update(health=self.health+1)
         return False
 
 
@@ -458,6 +468,8 @@ class Dirt(Tile):
         super(Dirt, self).__init__("dirt")
         self.health_variants.pop(6)
         # this one is too conspicuous
+        self.health_max = 6
+        # because we have one fewer tile for it
 
     def get_another(self):
         return Dirt()
@@ -468,7 +480,8 @@ class Hole(Tile):
     def __init__(self):
         super(Hole, self).__init__("hole")
         self.bitmask = 0
-        self.health = 0.0
+        self.health = 0
+        self.health_max = 3
         self.superwalkable = True
         self.immortal = True
 
@@ -476,13 +489,12 @@ class Hole(Tile):
         return Hole()
 
     def pick_up(self):
-        self.health += 1
-        self.dirty = True
-        return self.get_another()
+        if self.update(health = self.health+1):
+            return Dirt()
+        else:
+            return False
 
     def place(self, item):
-        if item.name == self.name:
-            self.health -= 1
-            self.dirty = True
-            return True
+        if item.name == "dirt":
+            return self.update(health = self.health-1)
         return False
