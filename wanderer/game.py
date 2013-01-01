@@ -52,7 +52,6 @@ class Game(object):
 
         # Map
         self.map = world.Map(640, 640)
-        self.screen.blit(self.map.surface, (0,0))
         print " * map"
 
         # Files
@@ -128,8 +127,8 @@ class Game(object):
         self.all_particles.update()
         for timer in timers.all_timers:
             timer.update(loop_time)
-        self.map.update()
 
+        self.map.update()
         if self.map.dirty:
             self.screen.blit(self.map.surface, (0, 0))
             self.map.dirty = False

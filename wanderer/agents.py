@@ -266,7 +266,7 @@ class Player(Agent):
 
     def pick_up(self):
         if super(Player, self).pick_up():
-            self.inventory()
+            self.interject("I picked up {}".format(self.holding.name))
         else:
             self.interject("I can't pick up anything here.")
 

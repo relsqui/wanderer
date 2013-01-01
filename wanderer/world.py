@@ -33,9 +33,8 @@ class Map(object):
     def update(self):
         "Redraw the map surface and walk mask."
         for index, layer in enumerate(self.layers):
-            while layer.update():
-                # keep updating until it stops having sprites to update
-                pass
+            if layer.dirty:
+                layer.update()
                 self.dirty = True
             self.surface.blit(layer.surface, layer.rect)
             # everybody gets blitted, in case a
@@ -134,11 +133,8 @@ class Layer(object):
         self.rect = pygame.Rect(px_topleft, px_size)
         self.surface = pygame.Surface(px_size)
         self.surface.set_colorkey(COLOR_KEY)
-        self.dirty_tiles = []
-        # we're storing dirty tiles at the layer level
-        # because sometimes what's dirty is the *lack* of tile.
-        # tiles *also* have a dirty attribute, but it means
-        # "update my neighbors/edges" not just "redraw me"
+        self.dirty = False
+        # unlike Map and Tile, a fresh Layer is actually empty
 
     def get_tile(self, x, y):
         "Return the tile at position x, y or None if there is none."
@@ -152,13 +148,12 @@ class Layer(object):
         # simple version for testing
         if tile:
             self.tiles[(x, y)] = tile
+            tile.dirty = True
         else:
-            self.remove_tile(x, y)
-        self.dirty_tiles.append((x, y))
+            tile.kill = True
         return
         """
 
-        destroy_tile = False
         if tile:
             new_tile = tile
             self.tiles[(x, y)] = new_tile
@@ -168,10 +163,12 @@ class Layer(object):
                 # clear its neighbors first
                 new_tile = self.get_tile(x, y)
                 new_tile.bitmask = 0
-                destroy_tile = True
+                new_tile.kill = True
             else:
                 # unsetting a tile which didn't exist
                 return
+        self.dirty = True
+        # new tile is set, the rest of this is updating neighbors
 
         bit_changes = []
         # the elements of a tuple in bit_changes are:
@@ -211,19 +208,8 @@ class Layer(object):
             new_mask = shift(new_tile.bitmask & mask) | (old_mask & ~shift(mask))
             if new_mask != old_mask:
                 neighbor.update(bitmask = new_mask)
-                if new_mask:
-                    self.tiles[(x+dx, y+dy)] = neighbor
-                else:
-                    # that tile was depending on this edge
-                    # and we removed it. destroy the tile, if it exists
-                    # (and isn't immortal)
-                    if self.get_tile(x+dx, y+dy):
-                        self.remove_tile(x+dx, y+dy)
-                self.dirty_tiles.append((x+dx, y+dy))
-
-        if destroy_tile:
-            self.remove_tile(x, y)
-        self.dirty_tiles.append((x, y))
+                neighbor.dirty = True
+                self.tiles[(x+dx, y+dy)] = neighbor
 
     def remove_tile(self, x, y):
         tile = self.get_tile(x, y)
@@ -232,49 +218,43 @@ class Layer(object):
 
     def update(self):
         "Redraw tiles at any changed locations."
-        if not self.dirty_tiles:
-            return
         blank = pygame.Surface((TILE_SIZE, TILE_SIZE))
         blank.fill(COLOR_KEY)
-        for location in self.dirty_tiles:
-            x, y = location
-            px_x = (x - self.left) * TILE_SIZE
-            px_y = (y - self.top) * TILE_SIZE
-            tile = self.get_tile(x, y)
-            self.surface.blit(blank, (px_x, px_y))
-            if tile:
-                if tile.health <= 0:
+        for x in xrange(self.left, self.left+self.width):
+            for y in xrange(self.top, self.top+self.height):
+                tile = self.get_tile(x, y)
+                if not tile or not (tile.dirty or tile.kill):
+                    continue
+                px_x = (x - self.left) * TILE_SIZE
+                px_y = (y - self.top) * TILE_SIZE
+                self.surface.blit(blank, (px_x, px_y))
+                if tile.kill:
                     self.remove_tile(x, y)
-                elif tile.dirty:
-                    tile.dirty = False
-                    self.set_tile(x, y, tile)
                 else:
                     self.surface.blit(tile.image, (px_x, px_y))
-        self.dirty_tiles = []
+                    tile.dirty = False
+        self.dirty = False
 
     def fill(self, tile_type, *args):
         "Fill the layer with instances of a Tile callable, or None (clear it)."
         self.set_rect((self.left, self.top), (self.left+self.width, self.top+self.height), tile_type, *args)
         return self
-        # ^ so we can initialize with layer = Layer(x, y).fill(tile)
 
     def set_row(self, y, tile_type, *args):
         "Fill a row with instances of a Tile callable, or None (clear it)."
+        tile = None
         for x in xrange(self.width):
             if tile_type:
                 tile = tile_type(*args)
-            else:
-                tile = None
             self.set_tile(x, y, tile)
         return self
 
     def set_column(self, x, tile_type, *args):
         "Fill a column with instances of a Tile callable, or None (clear it)."
+        tile = None
         for y in xrange(self.height):
             if tile_type:
                 tile = tile_type(*args)
-            else:
-                tile = None
             self.set_tile(x, y, tile)
         return self
 
@@ -282,12 +262,11 @@ class Layer(object):
         "Fill a rectangle with instances of a Tile callable, or None (clear it)."
         left, top = topleft
         right, bottom = bottomright
+        tile = None
         for x in xrange(left, right):
             for y in xrange(top, bottom):
                 if tile_type:
                     tile = tile_type(*args)
-                else:
-                    tile = None
                 self.set_tile(x, y, tile)
         return self
 
@@ -298,16 +277,18 @@ class Tile(object):
     def __init__(self, name):
         super(Tile, self).__init__()
         self.name = name
-        self.walkable = True
-        self.superwalkable = False
-        # "walkable" means the opaque parts of the tile are walkable
-        # "superwalkable" means the whole tile is walkable
-        self.immortal = False
         self.bitmask = 0b1111
         self.health = random.randrange(3, 7)
+        self.walkable = True
+        # if True, the opaque parts of the tile are walkable
+        self.superwalkable = False
+        # if True, the whole tile is walkable regardless of opacity
+        self.immortal = False
+        # if True, don't remove this tile when you otherwise would
+        self.kill = False
+        # if True, remove this tile from its layer
         self.dirty = True
-        # unlike the map and layers, dirty tiles aren't just redrawn
-        # they're re-set, so their neighbors' bitmasks are recalculated
+        # if True, redraw this tile onto its layer
 
         tile_sheet = pygame.image.load(os.path.join(DATA_DIR, "images", "tiles", name + ".png"))
         tile_locations = {}
@@ -392,6 +373,8 @@ class Tile(object):
             self.bitmask = bitmask
         if health is not None:
             self.health = health
+        if self.health <= 0 and not self.immortal:
+            self.kill = True
         self.dirty = True
         # we can do other interrelated modifications later
 
@@ -413,16 +396,13 @@ class Tile(object):
 
         def debug_health(name=None):
             if not name or self.name == name:
-                if name == "hole":
-                    h = 1
-                else:
-                    h = 0
-                health_text = font.render(str(self.health+h), False, color)
+                health_text = font.render(str(self.health), False, color)
                 index_text = font.render(str(health_index), False, color)
                 image.blit(health_text, (14, 6))
                 image.blit(index_text, (14, 16))
 
         """
+        # saving this until I move the relevant logic to update()
         if self.health >= 3.0 and not self.bitmask:
             self.bitmask = 0b0000
             self.dirty = True
