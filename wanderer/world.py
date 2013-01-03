@@ -9,18 +9,16 @@ COLOR_KEY = (0, 0, 0)
 class Map(object):
     "Stores data about the map. Initialize with pixel width and height."
 
-    def __init__(self, px_width, px_height):
+    def __init__(self, px_width, px_height, left=0, top=0):
         self.surface = pygame.Surface((px_width, px_height))
         self.surface.set_colorkey(COLOR_KEY)
         self.width = int(math.ceil(px_width/TILE_SIZE))
         self.height = int(math.ceil(px_height/TILE_SIZE))
+        self.left = 0
+        self.top = 0
         self.dirty = True
 
-        self.layers = []
-        self.layers.append(Layer("water", self.width, self.height).fill(Blocking, "water"))
-        self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Dirt))
-        self.layers.append(Layer("hole", self.width, self.height).fill(Hole))
-        self.layers.append(Layer("grass", self.width, self.height).set_rect((3, 3), (self.width-3, self.height-3), Diggable, "grass"))
+        self.tiers = [Tier(self.height, self.width, self.left, self.top)]
 
         self.tile_masks = {}
         self.walk_mask = pygame.sprite.Sprite()
@@ -31,14 +29,13 @@ class Map(object):
         self.update()
 
     def update(self):
-        "Redraw the map surface and walk mask."
-        for index, layer in enumerate(self.layers):
-            layer.update()
-            if layer.dirty:
+        for tier in self.tiers:
+            tier.update()
+            if tier.dirty:
                 self.dirty = True
-            self.surface.blit(layer.surface, layer.rect)
-            # everybody gets blitted, in case a
-            # higher layer updated to transparent
+                tier.dirty = False
+            self.surface.blit(tier.surface, (0,0))
+            # blit all of them, in case a higher tier updated to transparent
         for x in xrange(self.width):
             for y in xrange(self.height):
                 mask = self.get_tile_mask(x, y)
@@ -88,11 +85,16 @@ class Map(object):
         return self.tile_masks[(x, y)]
 
     def tiles_under(self, x, y):
-        "Returns a list of tiles under the coordinates given, from bottom layer to top."
+        "Returns a list of tiles on the top tier under the coordinates given, from bottom layer to top."
         tiles = []
-        for index, layer in enumerate(self.layers):
-            tile = layer.get_tile(x, y)
-            tiles.append(tile)
+        top_tier = None
+        for tier in self.tiers:
+            if tier.exists_at(x, y):
+                top_tier = tier
+        if top_tier:
+            for name in top_tier.layer_names:
+                tile = top_tier.layers[name].get_tile(x, y)
+                tiles.append(tile)
         return tiles
 
     def top_tile(self, x, y):
@@ -120,16 +122,56 @@ class Map(object):
         return None
 
 
+class Tier(object):
+    "Stores information about a height level on the map. Initialize with width and height in tiles."
+
+    def __init__(self, width, height, left, top):
+        super(Tier, self).__init__()
+        self.width = width
+        self.height = height
+        self.top = top
+        self.left = left
+        px_width, px_height = (self.width*TILE_SIZE, self.height*TILE_SIZE)
+        self.surface = pygame.Surface((px_width, px_height))
+        self.dirty = True
+
+        self.layer_names = ["dirt", "hole", "grass", "water", "items"]
+        # the name list also provides the order
+        self.layers = {}
+        for name in self.layer_names:
+            self.layers[name] = Layer(self.width, self.height, self.left, self.top)
+        self.layers["dirt"].fill(Dirt)
+        self.layers["hole"].fill(Hole)
+        self.layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Diggable, "grass")
+
+    def update(self):
+        "Redraw the tier surface."
+        for name in self.layer_names:
+            layer = self.layers[name]
+            layer.update()
+            if layer.dirty:
+                self.dirty = True
+                layer.dirty = False
+            self.surface.blit(layer.surface, layer.rect)
+
+    def exists_at(self, x, y):
+        "Return True if the tier has contents at the given coordinates."
+        exists = False
+        for layer in self.layers.values():
+            if layer.get_tile(x, y):
+                exists = True
+        return exists
+
+
 class Layer(object):
     "Stores a grid of tile objects and a surface which depicts them. Initialize with width and height in tiles."
 
-    def __init__(self, name, width, height):
+    def __init__(self, width, height, left, top):
         super(Layer, self).__init__()
-        self.name = name
         self.width = width
         self.height = height
-        self.top = 0
-        self.left = 0
+        self.top = top
+        self.left = left
         self.tiles = {}
         px_size = (self.width*TILE_SIZE, self.height*TILE_SIZE)
         px_topleft = (self.left*TILE_SIZE, self.top*TILE_SIZE)
