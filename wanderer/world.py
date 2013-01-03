@@ -143,6 +143,7 @@ class Tier(object):
         self.layers["dirt"].fill(Dirt)
         self.layers["hole"].fill(Hole)
         self.layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Diggable, "grass")
+        self.layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Diggable, "water")
 
     def update(self):
         "Redraw the tier surface."
