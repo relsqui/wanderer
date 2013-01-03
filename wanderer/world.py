@@ -20,9 +20,9 @@ class Map(object):
         self.layers.append(Layer("water", self.width, self.height).fill(Blocking, "water"))
         self.layers.append(Layer("dirt", self.width, self.height).set_rect((2, 2), (self.width-2, self.height-2), Dirt))
         self.layers.append(Layer("hole", self.width, self.height).fill(Hole))
-        self.layers.append(Layer("grass", self.width, self.height).set_rect((4, 4), (self.width-4, self.height-4), Diggable, "grass"))
+        self.layers.append(Layer("grass", self.width, self.height).set_rect((3, 3), (self.width-3, self.height-3), Diggable, "grass"))
 
-        self.tile_masks = {} # to store masks cached by get_tile_mask
+        self.tile_masks = {}
         self.walk_mask = pygame.sprite.Sprite()
         self.walk_mask.image = pygame.Surface((px_width, px_height))
         self.walk_mask.image.set_colorkey(COLOR_KEY)
@@ -43,6 +43,7 @@ class Map(object):
             for y in xrange(self.height):
                 mask = self.get_tile_mask(x, y)
                 self.walk_mask.image.blit(mask, (x*TILE_SIZE, y*TILE_SIZE))
+        # self.walk_mask.image.set_alpha(100)
         # self.surface.blit(self.walk_mask.image, (0, 0))
         # ^ extremely useful for collision debugging
 
@@ -103,6 +104,7 @@ class Map(object):
         # if the loop runs out, we'll return None
 
     def place(self, px_x, px_y, item):
+        "Attempt to place the given item on the top tile at the given coordinates."
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
         tile = self.top_tile(x, y)
         if tile:
@@ -110,6 +112,7 @@ class Map(object):
         return False
 
     def pick_up(self, px_x, px_y):
+        "Attempt to pick up the top tile at the given coordinates."
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
         tile = self.top_tile(x, y)
         if tile:
@@ -197,11 +200,13 @@ class Layer(object):
             new_mask = shift(new_tile.bitmask & mask) | (old_mask & ~shift(mask))
             # update the tile, remove if it disappeared
             if neighbor.update(bitmask = new_mask) and not neighbor.bitmask:
-                    neighbor.update(health = 0)
-            # place our maybe-newly-created tile
-            self.tiles[(x+dx, y+dy)] = neighbor
+                neighbor.update(health = 0)
+            else:
+                # place our maybe-newly-created tile
+                self.tiles[(x+dx, y+dy)] = neighbor
 
     def remove_tile(self, x, y):
+        "Destroy the tile at the given coordinates, if it's not immortal."
         tile = self.get_tile(x, y)
         if tile and not tile.immortal:
             self.tiles.pop((x, y))
@@ -363,6 +368,7 @@ class Tile(object):
         return False
 
     def update(self, bitmask = None, health = None):
+        "Sets tile data which affect rendering. Returns True if a net change was made, False otherwise."
         old_mask, old_health = (self.bitmask, self.health)
 
         if bitmask is not None:
@@ -430,16 +436,19 @@ class Tile(object):
 
 class Diggable(Tile):
     "A Tile which deteriorates when dug (same arguments as Tile)."
+
     def get_another(self):
         return Diggable(self.name)
 
     def pick_up(self):
+        "When picked up, deteriorate and return another instance of self."
         if self.update(health=self.health-1):
             return self.get_another()
         else:
             return None
 
     def place(self, item):
+        "When another of the same tile is placed here, get healthier."
         if item.name == self.name:
             return self.update(health=self.health+1)
         return False
@@ -481,6 +490,7 @@ class Hole(Tile):
         return Hole()
 
     def pick_up(self):
+        "When the hole is 'picked up,' it gets deeper and yields dirt."
         if self.bitmask == 0 or self.bitmask == 0b1111:
             new_health = self.health + 1
         else:
@@ -492,6 +502,7 @@ class Hole(Tile):
             return False
 
     def place(self, item):
+        "When dirt is placed in the hole, it goes away."
         if item.name == "dirt":
             return self.update(health = self.health_min)
         return False
