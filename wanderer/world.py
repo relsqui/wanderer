@@ -123,16 +123,16 @@ class Map(object):
 class Layer(object):
     "Stores a grid of tile objects and a surface which depicts them. Initialize with width and height in tiles."
 
-    def __init__(self, name, width, height, top=0, left=0):
+    def __init__(self, name, width, height):
         super(Layer, self).__init__()
         self.name = name
         self.width = width
         self.height = height
-        self.top = top
-        self.left = left
+        self.top = 0
+        self.left = 0
         self.tiles = {}
-        px_size = (width*TILE_SIZE, height*TILE_SIZE)
-        px_topleft = (left*TILE_SIZE, top*TILE_SIZE)
+        px_size = (self.width*TILE_SIZE, self.height*TILE_SIZE)
+        px_topleft = (self.left*TILE_SIZE, self.top*TILE_SIZE)
         self.rect = pygame.Rect(px_topleft, px_size)
         self.surface = pygame.Surface(px_size)
         self.surface.set_colorkey(COLOR_KEY)
@@ -147,7 +147,6 @@ class Layer(object):
 
     def set_tile(self, x, y, tile):
         "Change x, y to the given tile or None (remove it)."
-
         if tile:
             new_tile = tile
             self.tiles[(x, y)] = new_tile
@@ -183,11 +182,9 @@ class Layer(object):
 
         for translation, mask, shift in bit_changes:
             dx, dy = translation
-            if x+dx not in xrange(self.left, self.left+self.width)\
-              or y+dy not in xrange(self.top, self.top+self.height):
-                # the neighboring tile is off the edge of the layer
+            if x+dx < self.left or x+dx > self.left+self.width\
+             or y+dy < self.top or y+dy > self.top+self.height:
                 continue
-
             neighbor = self.get_tile(x+dx, y+dy)
             if not neighbor:
                 # there isn't already a tile there; start one
@@ -205,32 +202,25 @@ class Layer(object):
                 # place our maybe-newly-created tile
                 self.tiles[(x+dx, y+dy)] = neighbor
 
-    def remove_tile(self, x, y):
-        "Destroy the tile at the given coordinates, if it's not immortal."
-        tile = self.get_tile(x, y)
-        if tile and not tile.immortal:
-            self.tiles.pop((x, y))
-
     def update(self):
         "Redraw tiles at any changed locations."
         blank = pygame.Surface((TILE_SIZE, TILE_SIZE))
         blank.fill(COLOR_KEY)
-        for x in xrange(self.left, self.left+self.width):
-            for y in xrange(self.top, self.top+self.height):
-                tile = self.get_tile(x, y)
-                if not tile or not (tile.dirty or tile.kill):
-                    continue
-                self.dirty = True
-                px_x = (x - self.left) * TILE_SIZE
-                px_y = (y - self.top) * TILE_SIZE
-                self.surface.blit(blank, (px_x, px_y))
-                if tile.kill:
-                    self.remove_tile(x, y)
-                else:
-                    # update its neighbors
-                    self.set_tile(x, y, tile)
-                    self.surface.blit(tile.image, (px_x, px_y))
-                    tile.dirty = False
+        for location, tile in self.tiles.items():
+            if not (tile.dirty or tile.kill):
+                continue
+            self.dirty = True
+            x, y = location
+            px_x = (x - self.left) * TILE_SIZE
+            px_y = (y - self.top) * TILE_SIZE
+            self.surface.blit(blank, (px_x, px_y))
+            if tile.kill and not tile.immortal:
+                self.tiles.pop((x, y))
+            else:
+                # update its neighbors
+                self.set_tile(x, y, tile)
+                self.surface.blit(tile.image, (px_x, px_y))
+                tile.dirty = False
 
     def fill(self, tile_type, *args):
         "Fill the layer with instances of a Tile callable, or None (clear it)."
