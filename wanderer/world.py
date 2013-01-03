@@ -87,15 +87,18 @@ class Map(object):
     def tiles_under(self, x, y):
         "Returns a list of tiles on the top tier under the coordinates given, from bottom layer to top."
         tiles = []
-        top_tier = None
-        for tier in self.tiers:
-            if tier.exists_at(x, y):
-                top_tier = tier
-        if top_tier:
-            for name in top_tier.layer_names:
-                tile = top_tier.layers[name].get_tile(x, y)
+        tier = self.top_tier(x, y)
+        if tier:
+            for name in tier.layer_names:
+                tile = tier.layers[name].get_tile(x, y)
                 tiles.append(tile)
         return tiles
+
+    def top_tier(self, x, y):
+        for tier in reversed(self.tiers):
+            if tier.exists_at(x, y):
+                return tier
+        return None
 
     def top_tile(self, x, y):
         "Returns the top tile which exists under the coordinates given, or None if there aren't any."
@@ -103,15 +106,20 @@ class Map(object):
             if tile:
                 break
         return tile
-        # if the loop runs out, we'll return None
 
     def place(self, px_x, px_y, item):
         "Attempt to place the given item on the top tile at the given coordinates."
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
-        tile = self.top_tile(x, y)
-        if tile:
-            return tile.place(item)
-        return False
+        tier = self.top_tier(x, y)
+        layer = tier.layers[item.layer]
+        tile = layer.get_tile(x, y)
+        if not tile:
+            if item.tile:
+                layer.set_tile(x, y, item.tile().empty())
+                tile = layer.get_tile(x, y)
+            else:
+                return False
+        return tile.place(item)
 
     def pick_up(self, px_x, px_y):
         "Attempt to pick up the top tile at the given coordinates."
@@ -142,8 +150,8 @@ class Tier(object):
             self.layers[name] = Layer(self.width, self.height, self.left, self.top)
         self.layers["dirt"].fill(Dirt)
         self.layers["hole"].fill(Hole)
-        self.layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Diggable, "grass")
-        self.layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Diggable, "water")
+        self.layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Grass)
+        self.layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Water)
 
     def update(self):
         "Redraw the tier surface."
@@ -400,6 +408,11 @@ class Tile(object):
         "Defines behavior when an object is placed here; returns True if the placement was successful, False otherwise."
         return False
 
+    def empty(self):
+        "Clear bitmask and return self; used for starting new tiles when placed."
+        self.bitmask = 0
+        return self
+
     def update(self, bitmask = None, health = None):
         "Sets tile data which affect rendering. Returns True if a net change was made, False otherwise."
         old_mask, old_health = (self.bitmask, self.health)
@@ -473,10 +486,14 @@ class Diggable(Tile):
     def get_another(self):
         return Diggable(self.name)
 
+    def item(self):
+        return Item(self.name)
+        # This is useless! Subclasses should override.
+
     def pick_up(self):
-        "When picked up, deteriorate and return another instance of self."
+        "When picked up, deteriorate and return an item."
         if self.update(health=self.health-1):
-            return self.get_another()
+            return self.item()
         else:
             return None
 
@@ -485,6 +502,22 @@ class Diggable(Tile):
         if item.name == self.name:
             return self.update(health=self.health+1)
         return False
+
+
+class Grass(Diggable):
+    def __init__(self):
+        super(Grass, self).__init__("grass")
+
+    def item(self):
+        return Item("grass", Grass, "grass")
+
+
+class Water(Diggable):
+    def __init__(self):
+        super(Water, self).__init__("water")
+
+    def item(self):
+        return Item("water", Water, "water")
 
 
 class Blocking(Tile):
@@ -530,7 +563,7 @@ class Hole(Tile):
             # we're already half-dug, skip the incremental
             new_health = self.health_max
         if self.update(health = new_health):
-            return Dirt()
+            return Item("dirt", Dirt, "hole")
         else:
             return False
 
@@ -539,3 +572,15 @@ class Hole(Tile):
         if item.name == "dirt":
             return self.update(health = self.health_min)
         return False
+
+
+class Item(object):
+    "An item which can be on the map or in an agent's inventory."
+
+    def __init__(self, name, tile = None, layer = "items"):
+        self.name = name
+        self.tile = tile
+        self.layer = layer
+
+    def __repr__(self):
+        return '<Item "{}">'.format(self.tile, self.name)
