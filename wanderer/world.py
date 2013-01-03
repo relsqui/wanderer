@@ -19,6 +19,10 @@ class Map(object):
         self.dirty = True
 
         self.tiers = [Tier(self.height, self.width, self.left, self.top)]
+        self.tiers[0].layers["dirt"].fill(Dirt)
+        self.tiers[0].layers["hole"].fill(Hole)
+        self.tiers[0].layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Grass)
+        self.tiers[0].layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Water)
 
         self.tile_masks = {}
         self.walk_mask = pygame.sprite.Sprite()
@@ -148,10 +152,6 @@ class Tier(object):
         self.layers = {}
         for name in self.layer_names:
             self.layers[name] = Layer(self.width, self.height, self.left, self.top)
-        self.layers["dirt"].fill(Dirt)
-        self.layers["hole"].fill(Hole)
-        self.layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Grass)
-        self.layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Water)
 
     def update(self):
         "Redraw the tier surface."
