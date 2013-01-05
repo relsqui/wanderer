@@ -1,4 +1,4 @@
-import pygame, sys, random
+import pygame, sys, random, jsonpickle, json
 from wanderer.constants import *
 from wanderer import agents, sprites, particles, timers, world
 
@@ -19,6 +19,8 @@ LEFT_KEYS = (K_h, K_LEFT)
 RIGHT_KEYS = (K_l, K_RIGHT)
 UP_KEYS = (K_k, K_UP)
 DOWN_KEYS = (K_j, K_DOWN)
+
+SAVEFILE = "wanderer.sav" 
 
 
 class Game(object):
@@ -45,14 +47,9 @@ class Game(object):
         title_file = os.path.join(DATA_DIR, "fonts", "04B_20__.TTF")
         self.title_font = pygame.font.Font(title_file, TITLE_SIZE)
         self.subtitle_font = pygame.font.Font(title_file, BIG_FONT_SIZE)
-        print " * interface"
 
         # (this is the earliest we can display the splash screen)
         self.display_splash("Loading ...")
-
-        # Map
-        self.map = world.Map(640, 640)
-        print " * map"
 
         # Files
         self.texts = {}
@@ -64,15 +61,11 @@ class Game(object):
         self.all_sprites = pygame.sprite.RenderUpdates()
         self.all_agents = []
         self.all_npcs = []
-        self.player = agents.Player(self, "Player")
-        print " * agents"
 
         # Miscellany
         self.clock = pygame.time.Clock()
-        self.init_controls()
-        print " * controls & clock"
-        print "Done."
 
+    def confirm_start(self):
         self.display_splash("Ready!", "(hit enter)")
         while True:
             event = pygame.event.wait()
@@ -82,6 +75,10 @@ class Game(object):
                 if event.key is K_q:
                     self.quit()
                     break
+
+    def new(self):
+        self.map = world.Map(640, 640)
+        self.player = agents.Player(self, "Player")
 
     def display_splash(self, message = None, small_message = None):
         def centered(surface):
@@ -208,8 +205,26 @@ class Game(object):
         self.controls = controls
         self.handlers = handlers
 
+    def save(self):
+        savegame = {}
+        savegame["map"] = self.map
+        savegame["player"] = self.player
+        savegame["npcs"] = self.all_npcs
+        with open(SAVEFILE, 'w') as savefile:
+            savefile.write(jsonpickle.encode(savegame))
+        print "Game saved."
+
+    def load(self):
+        with open(SAVEFILE) as savefile:
+            savegame = jsonpickle.decode(savefile.read())
+            print "Loading saved game."
+        self.map = savegame["map"]
+        self.player = savegame["player"]
+        self.all_npcs = savegame["npcs"]
+
     def quit(self):
         "Exit the game politely."
+        self.save()
         self.finished = True
 
 
