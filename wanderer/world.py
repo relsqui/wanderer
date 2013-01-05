@@ -9,20 +9,21 @@ COLOR_KEY = (0, 0, 0)
 class Map(object):
     "Stores data about the map. Initialize with pixel width and height."
 
-    def __init__(self, px_width, px_height, left=0, top=0):
+    def __init__(self, px_width, px_height, left=0, top=0, tiers=None):
         self.surface = pygame.Surface((px_width, px_height))
         self.surface.set_colorkey(COLOR_KEY)
+        self.px_width = px_width
+        self.px_height = px_height
+        # the only reason we're saving the pixel dimensions
+        # is so we can reconstruct ourselves from a savefile later
         self.width = int(math.ceil(px_width/TILE_SIZE))
         self.height = int(math.ceil(px_height/TILE_SIZE))
-        self.left = 0
-        self.top = 0
+        self.left = left
+        self.top = top
         self.dirty = True
 
-        self.tiers = [Tier(self.height, self.width, self.left, self.top)]
-        self.tiers[0].layers["dirt"].fill(Dirt)
-        self.tiers[0].layers["hole"].fill(Hole)
-        self.tiers[0].layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Grass)
-        self.tiers[0].layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Water)
+        if tiers is None:
+            self.tiers = self.new_tiers()
 
         self.tile_masks = {}
         self.walk_mask = pygame.sprite.Sprite()
@@ -31,6 +32,17 @@ class Map(object):
         self.walk_mask.rect = self.surface.get_rect()
 
         self.update()
+
+    def new_tiers(self):
+        tiers = [Tier(self.height, self.width, self.left, self.top)]
+        tiers[0].layers["dirt"].fill(Dirt)
+        tiers[0].layers["hole"].fill(Hole)
+        tiers[0].layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Grass)
+        tiers[0].layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Water)
+        return tiers
+
+    def to_json(self):
+        return {'px_width': self.px_width, 'px_height': self.px_height, 'left': self.left, 'top': self.top, 'tiers': [t.to_json() for t in self.tiers]}
 
     def update(self):
         for tier in self.tiers:
@@ -153,6 +165,12 @@ class Tier(object):
         for name in self.layer_names:
             self.layers[name] = Layer(self.width, self.height, self.left, self.top)
 
+    def to_json(self):
+        layers = {}
+        for name, layer in self.layers.items():
+            layers[name] = layer.to_json()
+        return {'layer_names': self.layer_names, 'layers': layers}
+
     def update(self):
         "Redraw the tier surface."
         for name in self.layer_names:
@@ -189,6 +207,12 @@ class Layer(object):
         self.surface.set_colorkey(COLOR_KEY)
         self.dirty = False
         # unlike Map and Tile, a fresh Layer is actually empty
+
+    def to_json(self):
+        tiles = {}
+        for location, tile in self.tiles.items():
+            tiles[str(location)] = tile.to_json()
+        return {'tiles': tiles}
 
     def get_tile(self, x, y):
         "Return the tile at position x, y or None if there is none."
@@ -396,6 +420,9 @@ class Tile(object):
         cursor.topleft = (0, 5*TILE_SIZE)
         self.health_variants.append(tile_sheet.subsurface(cursor))
 
+    def to_json(self):
+        return {'type': self.__class__.__name__, 'name': self.name, 'bitmask': self.bitmask, 'health': self.health}
+
     def get_another(self):
         "Return another instance of this class (not a full copy)."
         return Tile(self.name)
@@ -584,3 +611,6 @@ class Item(object):
 
     def __repr__(self):
         return '<Item "{}">'.format(self.tile, self.name)
+
+    def to_json(self):
+        return {'name': self.name, 'tile': self.tile, 'layer': self.layer}

@@ -211,16 +211,16 @@ class Game(object):
         savegame["player"] = self.player
         savegame["npcs"] = self.all_npcs
         with open(SAVEFILE, 'w') as savefile:
-            savefile.write(jsonpickle.encode(savegame))
+            json.dump(self.map.to_json(), savefile, sort_keys=True, indent=4)
         print "Game saved."
 
     def load(self):
         with open(SAVEFILE) as savefile:
-            savegame = jsonpickle.decode(savefile.read())
+            savegame = json.load(savefile)
             print "Loading saved game."
-        self.map = savegame["map"]
-        self.player = savegame["player"]
-        self.all_npcs = savegame["npcs"]
+        self.map = world.Map.from_json(savegame)
+        self.player = agents.Player()
+        self.all_npcs = []
 
     def quit(self):
         "Exit the game politely."
