@@ -22,8 +22,17 @@ class Map(object):
         self.top = top
         self.dirty = True
 
+        # tiers = [Tier(self.height, self.width, self.left, self.top)]
+        # tiers[0].layers["dirt"].fill(Dirt)
+        #tiers[0].layers["hole"].fill(Hole)
+        #tiers[0].layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Grass)
+        #tiers[0].layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Water)
+        """
         if tiers is None:
             self.tiers = self.new_tiers()
+        else:
+            self.tiers = tiers
+        """
 
         self.tile_masks = {}
         self.walk_mask = pygame.sprite.Sprite()
@@ -43,6 +52,10 @@ class Map(object):
 
     def to_json(self):
         return {'px_width': self.px_width, 'px_height': self.px_height, 'left': self.left, 'top': self.top, 'tiers': [t.to_json() for t in self.tiers]}
+
+    @classmethod
+    def from_json(self, json_map):
+        return Map(json_map["px_width"], json_map["px_height"], json_map["left"], json_map["top"], [Tier.from_json(t) for t in json_map["tiers"]])
 
     def update(self):
         for tier in self.tiers:
@@ -69,6 +82,7 @@ class Map(object):
 
     def walkable_mask(self, sprite):
         "Takes a sprite (with .image and .rect attributes), and returns True if all opaque parts of the sprite are over walkable map areas."
+        return True
         if pygame.sprite.collide_mask(sprite, self.walk_mask):
             return False
         return True
@@ -107,6 +121,7 @@ class Map(object):
         if tier:
             for name in tier.layer_names:
                 tile = tier.layers[name].get_tile(x, y)
+                print "{}: {}".format(name, tile)
                 tiles.append(tile)
         return tiles
 
@@ -149,7 +164,7 @@ class Map(object):
 class Tier(object):
     "Stores information about a height level on the map. Initialize with width and height in tiles."
 
-    def __init__(self, width, height, left, top):
+    def __init__(self, width, height, left, top, layers = {}):
         super(Tier, self).__init__()
         self.width = width
         self.height = height
@@ -160,16 +175,26 @@ class Tier(object):
         self.dirty = True
 
         self.layer_names = ["dirt", "hole", "grass", "water", "items"]
-        # the name list also provides the order
-        self.layers = {}
+        # the name list defines the order of the layers, bottom-up
+        self.layers = layers
         for name in self.layer_names:
-            self.layers[name] = Layer(self.width, self.height, self.left, self.top)
+            if not self.layers.get(name):
+                self.layers[name] = Layer(self.width, self.height, self.left, self.top)
+
 
     def to_json(self):
         layers = {}
         for name, layer in self.layers.items():
             layers[name] = layer.to_json()
-        return {'layer_names': self.layer_names, 'layers': layers}
+        return {'width': self.width, 'height': self.height, 'left': self.left, 'top': self.top, 'layers': layers}
+
+    @classmethod
+    def from_json(self, json_tier):
+        layers = {}
+        for name, layer in json_tier["layers"].items():
+            layers[name] = Layer.from_json(layer)
+        return Tier(json_tier["width"], json_tier["height"], json_tier["left"], json_tier["top"], layers)
+
 
     def update(self):
         "Redraw the tier surface."
@@ -193,26 +218,36 @@ class Tier(object):
 class Layer(object):
     "Stores a grid of tile objects and a surface which depicts them. Initialize with width and height in tiles."
 
-    def __init__(self, width, height, left, top):
+    def __init__(self, width, height, left, top, tiles = {}):
         super(Layer, self).__init__()
         self.width = width
         self.height = height
         self.top = top
         self.left = left
-        self.tiles = {}
+        self.tiles = tiles
         px_size = (self.width*TILE_SIZE, self.height*TILE_SIZE)
         px_topleft = (self.left*TILE_SIZE, self.top*TILE_SIZE)
         self.rect = pygame.Rect(px_topleft, px_size)
         self.surface = pygame.Surface(px_size)
         self.surface.set_colorkey(COLOR_KEY)
         self.dirty = False
-        # unlike Map and Tile, a fresh Layer is actually empty
+        print "initializing a layer with tiles:", self.tiles
 
     def to_json(self):
-        tiles = {}
+        tiles = []
         for location, tile in self.tiles.items():
-            tiles[str(location)] = tile.to_json()
-        return {'tiles': tiles}
+            x, y = location
+            tiles.append((x, y, tile.to_json()))
+        return {'width': self.width, 'height': self.height, 'left': self.left, 'top': self.top, 'tiles': tiles}
+
+    @classmethod
+    def from_json(self, json_layer):
+        tiles = {}
+        for tile_tuple in json_layer["tiles"]:
+            x, y, tile_json = tile_tuple
+            tile_type = tile_json["type"]
+            tiles[(int(x), int(y))] = globals()[tile_type].from_json(tile_json)
+        return Layer(json_layer["width"], json_layer["height"], json_layer["left"], json_layer["top"], tiles)
 
     def get_tile(self, x, y):
         "Return the tile at position x, y or None if there is none."
@@ -264,6 +299,8 @@ class Layer(object):
             if not neighbor:
                 # there isn't already a tile there; start one
                 neighbor = new_tile.get_another()
+                if type(neighbor) != type(new_tile):
+                    print "new tile is {}, neighbor is {}".format(type(new_tile), type(neighbor))
                 neighbor.bitmask = 0
             old_mask = neighbor.bitmask
 
@@ -336,13 +373,16 @@ class Layer(object):
 class Tile(object):
     "Generic class for map tile information. Takes a string name which should match the base name of a file in the tile images directory."
 
-    def __init__(self, name):
+    def __init__(self, name, bitmask = 0b1111, health = None):
         super(Tile, self).__init__()
         self.name = name
-        self.bitmask = 0b1111
+        self.bitmask = bitmask
         self.health_min = 0
         self.health_max = 7
-        self.health = random.randrange(3, self.health_max)
+        if health is None:
+            self.health = random.randrange(3, self.health_max)
+        else:
+            self.health = health
         self.walkable = True
         # if True, the opaque parts of the tile are walkable
         self.superwalkable = False
@@ -420,12 +460,20 @@ class Tile(object):
         cursor.topleft = (0, 5*TILE_SIZE)
         self.health_variants.append(tile_sheet.subsurface(cursor))
 
+    def __repr__(self):
+        return '<{} tile ("{}")>'.format(self.__class__.__name__, self.name)
+
     def to_json(self):
         return {'type': self.__class__.__name__, 'name': self.name, 'bitmask': self.bitmask, 'health': self.health}
 
+    @classmethod
+    def from_json(self, tile_json):
+        tile_type = tile_json.pop("type")
+        return globals()[tile_type](**tile_json)
+
     def get_another(self):
         "Return another instance of this class (not a full copy)."
-        return Tile(self.name)
+        return self.__class__(name=self.name)
 
     def pick_up(self):
         "Returns an object to be given to the player when this tile is picked up."
@@ -510,9 +558,6 @@ class Tile(object):
 class Diggable(Tile):
     "A Tile which deteriorates when dug (same arguments as Tile)."
 
-    def get_another(self):
-        return Diggable(self.name)
-
     def item(self):
         return Item(self.name)
         # This is useless! Subclasses should override.
@@ -532,16 +577,18 @@ class Diggable(Tile):
 
 
 class Grass(Diggable):
-    def __init__(self):
-        super(Grass, self).__init__("grass")
+    def __init__(self, **kwargs):
+        kwargs["name"] = "grass"
+        super(Grass, self).__init__(**kwargs)
 
     def item(self):
         return Item("grass", Grass, "grass")
 
 
 class Water(Diggable):
-    def __init__(self):
-        super(Water, self).__init__("water")
+    def __init__(self, **kwargs):
+        kwargs["name"] = "water"
+        super(Water, self).__init__(**kwargs)
 
     def item(self):
         return Item("water", Water, "water")
@@ -549,38 +596,31 @@ class Water(Diggable):
 
 class Blocking(Tile):
     "A Tile which can't be walked over (same arguments as Tile)."
-    def __init__(self, name):
-        super(Blocking, self).__init__(name)
+    def __init__(self, **kwargs):
+        super(Blocking, self).__init__(**kwargs)
         self.walkable = False
-
-    def get_another(self):
-        return Blocking(self.name)
 
 
 class Dirt(Tile):
-    def __init__(self):
-        super(Dirt, self).__init__("dirt")
+    def __init__(self, **kwargs):
+        kwargs["name"] = "dirt"
+        super(Dirt, self).__init__(**kwargs)
         self.health_variants.pop(6)
         # this one is too conspicuous
         self.health_max = 6
         # because we have one fewer tile for it
 
-    def get_another(self):
-        return Dirt()
-
 
 class Hole(Tile):
     "A Tile which starts invisible and becomes a hole when dug. No arguments."
-    def __init__(self):
-        super(Hole, self).__init__("hole")
+    def __init__(self, **kwargs):
+        kwargs["name"] = "hole"
+        super(Hole, self).__init__(**kwargs)
         self.bitmask = 0
         self.health = 0
         self.health_max = 3
         self.superwalkable = True
         self.immortal = True
-
-    def get_another(self):
-        return Hole()
 
     def pick_up(self):
         "When the hole is 'picked up,' it gets deeper and yields dirt."
@@ -614,3 +654,7 @@ class Item(object):
 
     def to_json(self):
         return {'name': self.name, 'tile': self.tile, 'layer': self.layer}
+
+    @classmethod
+    def from_json(self, json_item):
+        return Item(json_item["name"], json_item["tile"], json_item["layer"])

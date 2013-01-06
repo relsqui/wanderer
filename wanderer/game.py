@@ -219,7 +219,7 @@ class Game(object):
             savegame = json.load(savefile)
             print "Loading saved game."
         self.map = world.Map.from_json(savegame)
-        self.player = agents.Player()
+        self.player = agents.Player(self, "Player")
         self.all_npcs = []
 
     def quit(self):
