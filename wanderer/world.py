@@ -7,25 +7,20 @@ COLOR_KEY = (0, 0, 0)
 
 
 class Map(object):
-    "Stores data about the map. Initialize with pixel width and height."
+    "Stores data about the map. Initialize with pygame.Rect defining size/offset in tiles."
 
-    def __init__(self, px_width, px_height, left=0, top=0, tiers=None):
+    def __init__(self, rect, tiers=None):
+        self.rect = rect
+        self.left, self.top, self.width, self.height = self.rect
+        px_width, px_height = (self.width*TILE_SIZE, self.height*TILE_SIZE)
         self.surface = pygame.Surface((px_width, px_height))
         self.surface.set_colorkey(COLOR_KEY)
-        self.px_width = px_width
-        self.px_height = px_height
-        # the only reason we're saving the pixel dimensions
-        # is so we can reconstruct ourselves from a savefile later
-        self.width = int(math.ceil(px_width/TILE_SIZE))
-        self.height = int(math.ceil(px_height/TILE_SIZE))
-        self.left = left
-        self.top = top
         self.dirty = True
 
         if tiers:
             self.tiers = tiers
         else:
-            self.tiers = [Tier(self.height, self.width, self.left, self.top)]
+            self.tiers = [Tier(self.rect)]
 
         self.tile_masks = {}
         self.walk_mask = pygame.sprite.Sprite()
@@ -36,11 +31,11 @@ class Map(object):
         self.update()
 
     def to_json(self):
-        return {'px_width': self.px_width, 'px_height': self.px_height, 'left': self.left, 'top': self.top, 'tiers': [t.to_json() for t in self.tiers]}
+        return {'rect': tuple(self.rect), 'tiers': [t.to_json() for t in self.tiers]}
 
     @classmethod
     def from_json(self, json_map):
-        return Map(json_map["px_width"], json_map["px_height"], json_map["left"], json_map["top"], [Tier.from_json(t) for t in json_map["tiers"]])
+        return Map(pygame.Rect(*json_map["rect"]), [Tier.from_json(t) for t in json_map["tiers"]])
 
     def update(self):
         for tier in self.tiers:
@@ -148,12 +143,10 @@ class Map(object):
 class Tier(object):
     "Stores information about a height level on the map. Initialize with width and height in tiles."
 
-    def __init__(self, width, height, left, top, layers = None):
+    def __init__(self, rect, layers = None):
         super(Tier, self).__init__()
-        self.width = width
-        self.height = height
-        self.top = top
-        self.left = left
+        self.rect = rect
+        self.left, self.top, self.width, self.height = self.rect
         px_width, px_height = (self.width*TILE_SIZE, self.height*TILE_SIZE)
         self.surface = pygame.Surface((px_width, px_height))
         self.dirty = True
@@ -162,14 +155,14 @@ class Tier(object):
         self.layer_names = ["dirt", "hole", "grass", "water", "items"]
         if layers is None:
             layers = {}
-            layers["dirt"] = Layer(self.width, self.height, self.left, self.top).fill(Dirt)
-            layers["hole"] = Layer(self.width, self.height, self.left, self.top).fill(Hole)
-            layers["grass"] = Layer(self.width, self.height, self.left, self.top).set_rect((2, 2), (self.width-2, self.height-2), Grass)
-            layers["water"] = Layer(self.width, self.height, self.left, self.top).set_rect((4, 4), (self.width-4, self.height-4), Water)
+            layers["dirt"] = Layer(self.rect).fill(Dirt)
+            layers["hole"] = Layer(self.rect).fill(Hole)
+            layers["grass"] = Layer(self.rect).set_rect((2, 2), (self.width-2, self.height-2), Grass)
+            layers["water"] = Layer(self.rect).set_rect((4, 4), (self.width-4, self.height-4), Water)
         self.layers = layers
         for name in self.layer_names:
             if not self.layers.get(name):
-                self.layers[name] = Layer(self.width, self.height, self.left, self.top)
+                self.layers[name] = Layer(self.rect)
 
     def __repr__(self):
         layers = []
@@ -182,14 +175,14 @@ class Tier(object):
         layers = {}
         for name, layer in self.layers.items():
             layers[name] = layer.to_json()
-        return {'width': self.width, 'height': self.height, 'left': self.left, 'top': self.top, 'layers': layers}
+        return {'rect': tuple(self.rect), 'layers': layers}
 
     @classmethod
     def from_json(self, json_tier):
         layers = {}
         for name, layer in json_tier["layers"].items():
             layers[name] = Layer.from_json(layer)
-        return Tier(json_tier["width"], json_tier["height"], json_tier["left"], json_tier["top"], layers)
+        return Tier(pygame.Rect(*json_tier["rect"]), layers)
 
 
     def update(self):
@@ -214,18 +207,15 @@ class Tier(object):
 class Layer(object):
     "Stores a grid of tile objects and a surface which depicts them. Initialize with width and height in tiles."
 
-    def __init__(self, width, height, left, top, tiles = None):
+    def __init__(self, rect, tiles = None):
         super(Layer, self).__init__()
-        self.width = width
-        self.height = height
-        self.top = top
-        self.left = left
+        self.rect = rect
+        self.left, self.top, self.width, self.height = self.rect
         if tiles is None:
             tiles = {}
         self.tiles = tiles
         px_size = (self.width*TILE_SIZE, self.height*TILE_SIZE)
         px_topleft = (self.left*TILE_SIZE, self.top*TILE_SIZE)
-        self.rect = pygame.Rect(px_topleft, px_size)
         self.surface = pygame.Surface(px_size)
         self.surface.set_colorkey(COLOR_KEY)
         self.dirty = False
@@ -235,7 +225,7 @@ class Layer(object):
         for location, tile in self.tiles.items():
             x, y = location
             tiles.append((x, y, tile.to_json()))
-        return {'width': self.width, 'height': self.height, 'left': self.left, 'top': self.top, 'tiles': tiles}
+        return {'rect': tuple(self.rect), 'tiles': tiles}
 
     @classmethod
     def from_json(self, json_layer):
@@ -244,7 +234,7 @@ class Layer(object):
             x, y, tile_json = tile_tuple
             tile_type = tile_json["type"]
             tiles[(int(x), int(y))] = globals()[tile_type].from_json(tile_json)
-        return Layer(json_layer["width"], json_layer["height"], json_layer["left"], json_layer["top"], tiles)
+        return Layer(pygame.Rect(*json_layer["rect"]), tiles)
 
     def get_tile(self, x, y):
         "Return the tile at position x, y or None if there is none."

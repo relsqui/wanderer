@@ -77,7 +77,7 @@ class Game(object):
                     break
 
     def new(self):
-        self.map = world.Map(640, 640)
+        self.map = world.Map(pygame.Rect(0, 0, 20, 20))
         self.player = agents.Player(self, "Player")
 
     def display_splash(self, message = None, small_message = None):
