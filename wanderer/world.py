@@ -295,8 +295,7 @@ class Layer(object):
             neighbor = self.get_tile(x+dx, y+dy)
             if not neighbor:
                 # there isn't already a tile there; start one
-                neighbor = new_tile.get_another()
-                neighbor.bitmask = 0
+                neighbor = new_tile.get_another(bitmask = 0)
             old_mask = neighbor.bitmask
 
             # copy the neighbor-facing bits from the tile we're placing
@@ -466,9 +465,10 @@ class Tile(object):
         tile_type = tile_json.pop("type")
         return globals()[tile_type](**tile_json)
 
-    def get_another(self):
+    def get_another(self, **kwargs):
         "Return another instance of this class (not a full copy)."
-        return self.__class__(name=self.name)
+        kwargs["name"] = self.name
+        return self.__class__(**kwargs)
 
     def pick_up(self):
         "Returns an object to be given to the player when this tile is picked up."
