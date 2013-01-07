@@ -81,8 +81,8 @@ class Map(object):
             tile_mask = pygame.Surface((TILE_SIZE, TILE_SIZE))
             tile_mask.set_colorkey(COLOR_KEY)
             for tile in self.tiles_under(x, y):
-                if tile and not tile.superwalkable:
-                    if tile.walkable:
+                if tile and not tile.flags.get("superwalkable"):
+                    if tile.flags.get("walkable"):
                         tile_mask.blit(tile.image, (0,0))
                     else:
                         tile_mask.fill(COLOR_KEY)
@@ -321,7 +321,7 @@ class Layer(object):
             px_x = (x - self.left) * TILE_SIZE
             px_y = (y - self.top) * TILE_SIZE
             self.surface.blit(blank, (px_x, px_y))
-            if tile.kill and not tile.immortal:
+            if tile.kill and not tile.flags.get("immortal"):
                 self.tiles.pop((x, y))
             else:
                 # update its neighbors
@@ -368,7 +368,7 @@ class Layer(object):
 class Tile(object):
     "Generic class for map tile information. Takes a string name which should match the base name of a file in the tile images directory."
 
-    def __init__(self, name, bitmask = 0b1111, health = None):
+    def __init__(self, name, bitmask = 0b1111, health = None, flags = None):
         super(Tile, self).__init__()
         self.name = name
         self.bitmask = bitmask
@@ -378,12 +378,12 @@ class Tile(object):
             self.health = random.randrange(3, self.health_max)
         else:
             self.health = health
-        self.walkable = True
-        # if True, the opaque parts of the tile are walkable
-        self.superwalkable = False
-        # if True, the whole tile is walkable regardless of opacity
-        self.immortal = False
-        # if True, don't remove this tile when you otherwise would
+        if flags is None:
+            flags = {"walkable": True, "superwalkable": False, "immortal": False}
+            # walkable: opaque parts of tile can be walked on
+            # superwalkable: whole tile can be walked on, regardless of opacity
+            # immortal: don't kill the tile while this flags is set
+        self.flags = flags
         self.kill = False
         # if True, remove this tile from its layer
         self.dirty = True
@@ -459,7 +459,7 @@ class Tile(object):
         return '<{} tile ("{}")>'.format(self.__class__.__name__, self.name)
 
     def to_json(self):
-        return {'type': self.__class__.__name__, 'name': self.name, 'bitmask': self.bitmask, 'health': self.health}
+        return {'type': self.__class__.__name__, 'name': self.name, 'bitmask': self.bitmask, 'health': self.health, 'flags': self.flags}
 
     @classmethod
     def from_json(self, tile_json):
@@ -506,7 +506,7 @@ class Tile(object):
             elif self.health >= 3:
                 self.bitmask = 0b1111
 
-            if not self.health and not self.immortal:
+            if not self.health and not self.flags.get("immortal"):
                 self.kill = True
 
         if self.bitmask == old_mask and self.health == old_health:
@@ -593,7 +593,7 @@ class Blocking(Tile):
     "A Tile which can't be walked over (same arguments as Tile)."
     def __init__(self, **kwargs):
         super(Blocking, self).__init__(**kwargs)
-        self.walkable = False
+        self.flags["walkable"] = False
 
 
 class Dirt(Tile):
@@ -602,7 +602,7 @@ class Dirt(Tile):
         super(Dirt, self).__init__(**kwargs)
         self.health_variants.pop(6)
         # this one is too conspicuous
-        self.health_max = 6
+        self.health_max -= 1
         # because we have one fewer tile for it
 
 
@@ -614,8 +614,8 @@ class Hole(Tile):
         self.bitmask = 0
         self.health = 0
         self.health_max = 3
-        self.superwalkable = True
-        self.immortal = True
+        self.flags["superwalkable"] = True
+        self.flags["immortal"] = True
 
     def pick_up(self):
         "When the hole is 'picked up,' it gets deeper and yields dirt."
