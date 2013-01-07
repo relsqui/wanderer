@@ -22,17 +22,10 @@ class Map(object):
         self.top = top
         self.dirty = True
 
-        # tiers = [Tier(self.height, self.width, self.left, self.top)]
-        # tiers[0].layers["dirt"].fill(Dirt)
-        #tiers[0].layers["hole"].fill(Hole)
-        #tiers[0].layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Grass)
-        #tiers[0].layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Water)
-        """
-        if tiers is None:
-            self.tiers = self.new_tiers()
-        else:
+        if tiers:
             self.tiers = tiers
-        """
+        else:
+            self.tiers = [Tier(self.height, self.width, self.left, self.top)]
 
         self.tile_masks = {}
         self.walk_mask = pygame.sprite.Sprite()
@@ -41,14 +34,6 @@ class Map(object):
         self.walk_mask.rect = self.surface.get_rect()
 
         self.update()
-
-    def new_tiers(self):
-        tiers = [Tier(self.height, self.width, self.left, self.top)]
-        tiers[0].layers["dirt"].fill(Dirt)
-        tiers[0].layers["hole"].fill(Hole)
-        tiers[0].layers["grass"].set_rect((2, 2), (self.width-2, self.height-2), Grass)
-        tiers[0].layers["water"].set_rect((5, 5), (self.width-5, self.width-5), Water)
-        return tiers
 
     def to_json(self):
         return {'px_width': self.px_width, 'px_height': self.px_height, 'left': self.left, 'top': self.top, 'tiers': [t.to_json() for t in self.tiers]}
@@ -121,7 +106,6 @@ class Map(object):
         if tier:
             for name in tier.layer_names:
                 tile = tier.layers[name].get_tile(x, y)
-                print "{}: {}".format(name, tile)
                 tiles.append(tile)
         return tiles
 
@@ -133,6 +117,7 @@ class Map(object):
 
     def top_tile(self, x, y):
         "Returns the top tile which exists under the coordinates given, or None if there aren't any."
+        tile = None
         for tile in reversed(self.tiles_under(x, y)):
             if tile:
                 break
@@ -174,13 +159,11 @@ class Tier(object):
         self.surface = pygame.Surface((px_width, px_height))
         self.dirty = True
 
-        self.layer_names = ["dirt", "hole", "grass", "water", "items"]
+        self.layer_names = ["dirt", "grass"]
         # the name list defines the order of the layers, bottom-up
-        self.layers = layers
-        for name in self.layer_names:
-            if not self.layers.get(name):
-                self.layers[name] = Layer(self.width, self.height, self.left, self.top)
-
+        self.layers = {}
+        self.layers["dirt"] = Layer(self.width, self.height, self.left, self.top).fill(Dirt)
+        self.layers["grass"] = Layer(self.width, self.height, self.left, self.top)
 
     def to_json(self):
         layers = {}
@@ -231,7 +214,6 @@ class Layer(object):
         self.surface = pygame.Surface(px_size)
         self.surface.set_colorkey(COLOR_KEY)
         self.dirty = False
-        print "initializing a layer with tiles:", self.tiles
 
     def to_json(self):
         tiles = []
@@ -299,8 +281,6 @@ class Layer(object):
             if not neighbor:
                 # there isn't already a tile there; start one
                 neighbor = new_tile.get_another()
-                if type(neighbor) != type(new_tile):
-                    print "new tile is {}, neighbor is {}".format(type(new_tile), type(neighbor))
                 neighbor.bitmask = 0
             old_mask = neighbor.bitmask
 
@@ -551,6 +531,7 @@ class Tile(object):
             health_index = "-" # for debug printing
 
         # put debug calls here
+        debug_health("grass")
 
         return image
 
