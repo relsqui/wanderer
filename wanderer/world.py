@@ -67,7 +67,6 @@ class Map(object):
 
     def walkable_mask(self, sprite):
         "Takes a sprite (with .image and .rect attributes), and returns True if all opaque parts of the sprite are over walkable map areas."
-        return True
         if pygame.sprite.collide_mask(sprite, self.walk_mask):
             return False
         return True
@@ -149,7 +148,7 @@ class Map(object):
 class Tier(object):
     "Stores information about a height level on the map. Initialize with width and height in tiles."
 
-    def __init__(self, width, height, left, top, layers = {}):
+    def __init__(self, width, height, left, top, layers = None):
         super(Tier, self).__init__()
         self.width = width
         self.height = height
@@ -159,11 +158,25 @@ class Tier(object):
         self.surface = pygame.Surface((px_width, px_height))
         self.dirty = True
 
-        self.layer_names = ["dirt", "grass"]
         # the name list defines the order of the layers, bottom-up
-        self.layers = {}
-        self.layers["dirt"] = Layer(self.width, self.height, self.left, self.top).fill(Dirt)
-        self.layers["grass"] = Layer(self.width, self.height, self.left, self.top)
+        self.layer_names = ["dirt", "hole", "grass", "water", "items"]
+        if layers is None:
+            layers = {}
+            layers["dirt"] = Layer(self.width, self.height, self.left, self.top).fill(Dirt)
+            layers["hole"] = Layer(self.width, self.height, self.left, self.top).fill(Hole)
+            layers["grass"] = Layer(self.width, self.height, self.left, self.top).set_rect((2, 2), (self.width-2, self.height-2), Grass)
+            layers["water"] = Layer(self.width, self.height, self.left, self.top).set_rect((4, 4), (self.width-4, self.height-4), Water)
+        self.layers = layers
+        for name in self.layer_names:
+            if not self.layers.get(name):
+                self.layers[name] = Layer(self.width, self.height, self.left, self.top)
+
+    def __repr__(self):
+        layers = []
+        for name in self.layer_names:
+            layers.append("{}({})".format(name, len(self.layers[name].tiles)))
+        layer_text = ",".join(layers)
+        return "<Tier:{}>".format(layer_text)
 
     def to_json(self):
         layers = {}
@@ -201,12 +214,14 @@ class Tier(object):
 class Layer(object):
     "Stores a grid of tile objects and a surface which depicts them. Initialize with width and height in tiles."
 
-    def __init__(self, width, height, left, top, tiles = {}):
+    def __init__(self, width, height, left, top, tiles = None):
         super(Layer, self).__init__()
         self.width = width
         self.height = height
         self.top = top
         self.left = left
+        if tiles is None:
+            tiles = {}
         self.tiles = tiles
         px_size = (self.width*TILE_SIZE, self.height*TILE_SIZE)
         px_topleft = (self.left*TILE_SIZE, self.top*TILE_SIZE)
@@ -531,7 +546,6 @@ class Tile(object):
             health_index = "-" # for debug printing
 
         # put debug calls here
-        debug_health("grass")
 
         return image
 
