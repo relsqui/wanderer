@@ -93,6 +93,12 @@ class Map(object):
             self.tile_masks[(x, y)] = tile_mask
         return self.tile_masks[(x, y)]
 
+    def top_tier(self, x, y):
+        for tier in reversed(self.tiers):
+            if tier.exists_at(x, y):
+                return tier
+        return None
+
     def tiles_under(self, x, y):
         "Returns a list of tiles on the top tier under the coordinates given, from bottom layer to top."
         tiles = []
@@ -102,12 +108,6 @@ class Map(object):
                 tile = tier.layers[name].get_tile(x, y)
                 tiles.append(tile)
         return tiles
-
-    def top_tier(self, x, y):
-        for tier in reversed(self.tiers):
-            if tier.exists_at(x, y):
-                return tier
-        return None
 
     def top_tile(self, x, y):
         "Returns the top tile which exists under the coordinates given, or None if there aren't any."
@@ -120,16 +120,7 @@ class Map(object):
     def place(self, px_x, px_y, item):
         "Attempt to place the given item on the top tile at the given coordinates."
         x, y = (px_x/TILE_SIZE, px_y/TILE_SIZE)
-        tier = self.top_tier(x, y)
-        layer = tier.layers[item.layer]
-        tile = layer.get_tile(x, y)
-        if not tile:
-            if item.tile:
-                layer.set_tile(x, y, item.tile().empty())
-                tile = layer.get_tile(x, y)
-            else:
-                return False
-        return tile.place(item)
+        return item.alter_tiles(self.top_tier(x, y), x, y)
 
     def pick_up(self, px_x, px_y):
         "Attempt to pick up the top tile at the given coordinates."
@@ -152,13 +143,12 @@ class Tier(object):
         self.dirty = True
 
         # the name list defines the order of the layers, bottom-up
-        self.layer_names = ["dirt", "hole", "grass", "water", "items"]
+        self.layer_names = ["dirt", "grass", "water"]
         if layers is None:
             layers = {}
-            layers["dirt"] = Layer(self.rect).fill(Dirt)
-            layers["hole"] = Layer(self.rect).fill(Hole)
-            layers["grass"] = Layer(self.rect).set_rect((2, 2), (self.width-2, self.height-2), Grass)
-            layers["water"] = Layer(self.rect).set_rect((4, 4), (self.width-4, self.height-4), Water)
+            layers["dirt"] = Layer(self.rect).fill(DirtTile)
+            layers["grass"] = Layer(self.rect).set_rect((2, 2), (self.width-2, self.height-2), GrassTile)
+            layers["water"] = Layer(self.rect).set_rect((4, 4), (self.width-4, self.height-4), WaterTile)
         self.layers = layers
         for name in self.layer_names:
             if not self.layers.get(name):
@@ -464,10 +454,6 @@ class Tile(object):
         "Returns an object to be given to the player when this tile is picked up."
         return None
 
-    def place(self, item):
-        "Defines behavior when an object is placed here; returns True if the placement was successful, False otherwise."
-        return False
-
     def empty(self):
         "Clear bitmask and return self; used for starting new tiles when placed."
         self.bitmask = 0
@@ -540,98 +526,14 @@ class Tile(object):
         return image
 
 
-class Diggable(Tile):
-    "A Tile which deteriorates when dug (same arguments as Tile)."
-
-    def item(self):
-        return Item(self.name)
-        # This is useless! Subclasses should override.
-
-    def pick_up(self):
-        "When picked up, deteriorate and return an item."
-        if self.update(health=self.health-1):
-            return self.item()
-        else:
-            return None
-
-    def place(self, item):
-        "When another of the same tile is placed here, get healthier."
-        if item.name == self.name:
-            return self.update(health=self.health+1)
-        return False
-
-
-class Grass(Diggable):
-    def __init__(self, **kwargs):
-        kwargs["name"] = "grass"
-        super(Grass, self).__init__(**kwargs)
-
-    def item(self):
-        return Item("grass", Grass, "grass")
-
-
-class Water(Diggable):
-    def __init__(self, **kwargs):
-        kwargs["name"] = "water"
-        super(Water, self).__init__(**kwargs)
-
-    def item(self):
-        return Item("water", Water, "water")
-
-
-class Blocking(Tile):
-    "A Tile which can't be walked over (same arguments as Tile)."
-    def __init__(self, **kwargs):
-        super(Blocking, self).__init__(**kwargs)
-        self.flags["walkable"] = False
-
-
-class Dirt(Tile):
-    def __init__(self, **kwargs):
-        kwargs["name"] = "dirt"
-        super(Dirt, self).__init__(**kwargs)
-        self.health_variants.pop(6)
-        # this one is too conspicuous
-        self.health_max -= 1
-        # because we have one fewer tile for it
-
-
-class Hole(Tile):
-    "A Tile which starts invisible and becomes a hole when dug. No arguments."
-    def __init__(self, **kwargs):
-        kwargs["name"] = "hole"
-        super(Hole, self).__init__(**kwargs)
-        self.bitmask = 0
-        self.health = 0
-        self.health_max = 3
-        self.flags["superwalkable"] = True
-        self.flags["immortal"] = True
-
-    def pick_up(self):
-        "When the hole is 'picked up,' it gets deeper and yields dirt."
-        if self.bitmask == 0 or self.bitmask == 0b1111:
-            new_health = self.health + 1
-        else:
-            # we're already half-dug, skip the incremental
-            new_health = self.health_max
-        if self.update(health = new_health):
-            return Item("dirt", Dirt, "hole")
-        else:
-            return False
-
-    def place(self, item):
-        "When dirt is placed in the hole, it goes away."
-        if item.name == "dirt":
-            return self.update(health = self.health_min)
-        return False
-
-
 class Item(object):
-    "An item which can be on the map or in an agent's inventory."
+    "An item which can be on the map or in an agent's inventory. Initialize with name and, optionally, associated tile type and/or layer name."
 
-    def __init__(self, name, tile = None, layer = "items"):
+    def __init__(self, name, tile = None, layer = None):
         self.name = name
         self.tile = tile
+        if layer is None:
+            layer = self.name
         self.layer = layer
 
     def __repr__(self):
@@ -643,3 +545,71 @@ class Item(object):
     @classmethod
     def from_json(self, json_item):
         return Item(json_item["name"], json_item["tile"], json_item["layer"])
+
+    def alter_tiles(self, tier, x, y):
+        "What should the item do when placed on the map? Takes an ordered list of layer names and a dict of layer names to tiles, which should be equal length."
+        pass
+
+
+class DiggableTile(Tile):
+    "A Tile which deteriorates when dug (same arguments as Tile)."
+    def item(self):
+        return DiggableItem(self.name, self.__class__)
+
+    def pick_up(self):
+        "When picked up, deteriorate and return an item."
+        if self.update(health=self.health-1):
+            return self.item()
+        else:
+            return None
+
+
+class DiggableItem(Item):
+    def alter_tiles(self, tier, x, y):
+        "Increment the tile of our class, or place such a tile on the appropriate layer, if that tile or layer is on top."
+        for layer_name in reversed(tier.layer_names):
+            layer = tier.layers[layer_name]
+            tile = layer.get_tile(x, y)
+            if tile.__class__ == self.tile:
+                break
+            if layer_name == self.layer:
+                layer.set_tile(x, y, self.tile().empty())
+                tile = layer.get_tile(x, y)
+                break
+        else:
+            tile = None
+            layer = None
+
+        if tile:
+            # it's our type, attempt to increase it
+            return tile.update(health = tile.health + 1)
+        return False
+
+
+class GrassTile(DiggableTile):
+    def __init__(self, **kwargs):
+        kwargs["name"] = "grass"
+        super(GrassTile, self).__init__(**kwargs)
+
+
+class WaterTile(DiggableTile):
+    def __init__(self, **kwargs):
+        kwargs["name"] = "water"
+        super(WaterTile, self).__init__(**kwargs)
+
+
+class BlockingTile(Tile):
+    "A Tile which can't be walked over (same arguments as Tile)."
+    def __init__(self, **kwargs):
+        super(BlockingTile, self).__init__(**kwargs)
+        self.flags["walkable"] = False
+
+
+class DirtTile(Tile):
+    def __init__(self, **kwargs):
+        kwargs["name"] = "dirt"
+        super(DirtTile, self).__init__(**kwargs)
+        self.health_variants.pop(6)
+        # this one is too conspicuous
+        self.health_max -= 1
+        # because we have one fewer tile for it

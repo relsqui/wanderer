@@ -189,7 +189,7 @@ class Game(object):
         def p(*args):
             # cheeeeeats
             # if I were using py3 print, I wouldn't have to do this
-            # but I'm not
+            # but I'm not, so here we are
             for arg in args:
                 print arg,
             print
