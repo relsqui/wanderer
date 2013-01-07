@@ -565,21 +565,29 @@ class DiggableTile(Tile):
 
 
 class DiggableItem(Item):
-    def alter_tiles(self, tier, x, y):
-        "Increment the tile of our class, or place such a tile on the appropriate layer, if that tile or layer is on top."
+    def top_relevant_tile(self, tier, x, y, match_tile = None, match_layer = None):
+        "Find the top tile or layer that matches."
+        if match_tile is None and match_layer is None:
+            match_tile = self.tile
+            match_layer = self.layer
         for layer_name in reversed(tier.layer_names):
             layer = tier.layers[layer_name]
             tile = layer.get_tile(x, y)
-            if tile.__class__ == self.tile:
+            if tile.__class__ == match_tile:
                 break
-            if layer_name == self.layer:
-                layer.set_tile(x, y, self.tile().empty())
-                tile = layer.get_tile(x, y)
+            if layer_name == match_layer:
                 break
         else:
             tile = None
             layer = None
+        return (tile, layer)
 
+    def alter_tiles(self, tier, x, y):
+        "Attempt to update the top relevant tile, or place one."
+        tile, layer = self.top_relevant_tile(tier, x, y)
+        if layer and not tile:
+            layer.set_tile(x, y, self.tile().empty())
+            tile = layer.get_tile(x, y)
         if tile:
             # it's our type, attempt to increase it
             return tile.update(health = tile.health + 1)
@@ -596,6 +604,24 @@ class WaterTile(DiggableTile):
     def __init__(self, **kwargs):
         kwargs["name"] = "water"
         super(WaterTile, self).__init__(**kwargs)
+
+    def item(self):
+        return WaterItem()
+
+
+class WaterItem(DiggableItem):
+    def __init__(self):
+        super(WaterItem, self).__init__("water", WaterTile, "water")
+
+    def alter_tiles(self, tier, x, y):
+        if super(WaterItem, self).alter_tiles(tier, x, y):
+            # we successfully placed or incremented a water tile
+            water, layer = self.top_relevant_tile(tier, x, y, match_tile = WaterTile)
+            if water.bitmask == 0b1111:
+                # kill grass if there is any
+                tile, layer = self.top_relevant_tile(tier, x, y, match_layer = "grass")
+                if layer:
+                    layer.set_tile(x, y, None)
 
 
 class BlockingTile(Tile):
