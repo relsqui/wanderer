@@ -546,6 +546,28 @@ class Item(object):
     def from_json(self, json_item):
         return Item(json_item["name"], json_item["tile"], json_item["layer"])
 
+    def tile_available(self, tier, x, y, tile_type = None):
+        if tile_type is None:
+            tile_type = self.tile
+        for layer_name in reversed(tier.layer_names):
+            tile = tier.layers[layer_name].get_tile(x, y)
+            if tile:
+                break
+        if tile.__class__ == tile_type:
+            return tile
+        return None
+
+    def layer_available(self, tier, x, y, layer_name = None):
+        if layer_name is None:
+            layer_name = self.layer
+        for name in reversed(tier.layer_names):
+            layer = tier.layers[name]
+            if name == layer_name:
+                return layer
+            if layer.get_tile(x, y):
+                break
+        return None
+
     def alter_tiles(self, tier, x, y):
         "What should the item do when placed on the map? Takes an ordered list of layer names and a dict of layer names to tiles, which should be equal length."
         pass
@@ -565,31 +587,15 @@ class DiggableTile(Tile):
 
 
 class DiggableItem(Item):
-    def top_relevant_tile(self, tier, x, y, match_tile = None, match_layer = None):
-        "Find the top tile or layer that matches."
-        if match_tile is None and match_layer is None:
-            match_tile = self.tile
-            match_layer = self.layer
-        for layer_name in reversed(tier.layer_names):
-            layer = tier.layers[layer_name]
-            tile = layer.get_tile(x, y)
-            if tile.__class__ == match_tile:
-                break
-            if layer_name == match_layer:
-                break
-        else:
-            tile = None
-            layer = None
-        return (tile, layer)
-
     def alter_tiles(self, tier, x, y):
         "Attempt to update the top relevant tile, or place one."
-        tile, layer = self.top_relevant_tile(tier, x, y)
+        tile = self.tile_available(tier, x, y)
+        layer = self.layer_available(tier, x, y)
         if layer and not tile:
+            layer = tier.layers[self.layer]
             layer.set_tile(x, y, self.tile().empty())
             tile = layer.get_tile(x, y)
         if tile:
-            # it's our type, attempt to increase it
             return tile.update(health = tile.health + 1)
         return False
 
@@ -616,12 +622,13 @@ class WaterItem(DiggableItem):
     def alter_tiles(self, tier, x, y):
         if super(WaterItem, self).alter_tiles(tier, x, y):
             # we successfully placed or incremented a water tile
-            water, layer = self.top_relevant_tile(tier, x, y, match_tile = WaterTile)
+            water = tier.layers[self.layer].get_tile(x, y)
             if water.bitmask == 0b1111:
                 # kill grass if there is any
-                tile, layer = self.top_relevant_tile(tier, x, y, match_layer = "grass")
-                if layer:
-                    layer.set_tile(x, y, None)
+                if "grass" in tier.layers.keys():
+                    tier.layers["grass"].set_tile(x, y, None)
+            return True
+        return False
 
 
 class BlockingTile(Tile):
