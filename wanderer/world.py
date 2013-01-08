@@ -646,3 +646,23 @@ class DirtTile(Tile):
         # this one is too conspicuous
         self.health_max -= 1
         # because we have one fewer tile for it
+
+    def item(self):
+        return DirtItem()
+
+    def pick_up(self):
+        # this is temporary, for testing with water filling
+        return self.item()
+
+
+class DirtItem(Item):
+    def __init__(self):
+        super(DirtItem, self).__init__("dirt", DirtTile, "dirt")
+
+    def alter_tiles(self, tier, x, y):
+        tile = self.tile_available(tier, x, y, WaterTile)
+        layer = self.layer_available(tier, x, y, "water")
+        if tile and layer:
+            layer.set_tile(x, y, None)
+            return True
+        return False
