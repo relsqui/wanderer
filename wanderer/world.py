@@ -586,6 +586,16 @@ class DiggableTile(Tile):
             return None
 
 
+class FactoryTile(Tile):
+    "A Tile which yields an item when dug, without deteriorating."
+    def item(self):
+        # should be overridden in subclasses
+        return None
+
+    def pick_up(self):
+        return self.item()
+
+
 class DiggableItem(Item):
     def alter_tiles(self, tier, x, y):
         "Attempt to update the top relevant tile, or place one."
@@ -606,7 +616,7 @@ class GrassTile(DiggableTile):
         super(GrassTile, self).__init__(**kwargs)
 
 
-class WaterTile(DiggableTile):
+class WaterTile(FactoryTile):
     def __init__(self, **kwargs):
         kwargs["name"] = "water"
         super(WaterTile, self).__init__(**kwargs)
@@ -638,7 +648,7 @@ class BlockingTile(Tile):
         self.flags["walkable"] = False
 
 
-class DirtTile(Tile):
+class DirtTile(FactoryTile):
     def __init__(self, **kwargs):
         kwargs["name"] = "dirt"
         super(DirtTile, self).__init__(**kwargs)
