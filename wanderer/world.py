@@ -454,11 +454,6 @@ class Tile(object):
         "Returns an object to be given to the player when this tile is picked up."
         return None
 
-    def empty(self):
-        "Clear bitmask and return self; used for starting new tiles when placed."
-        self.bitmask = 0
-        return self
-
     def update(self, bitmask = None, health = None):
         "Sets tile data which affect rendering. Returns True if a net change was made, False otherwise."
         old_mask, old_health = (self.bitmask, self.health)
@@ -601,12 +596,11 @@ class DiggableItem(Item):
         "Attempt to update the top relevant tile, or place one."
         tile = self.tile_available(tier, x, y)
         layer = self.layer_available(tier, x, y)
-        if layer and not tile:
-            layer = tier.layers[self.layer]
-            layer.set_tile(x, y, self.tile().empty())
-            tile = layer.get_tile(x, y)
         if tile:
             return tile.update(health = tile.health + 1)
+        elif layer:
+            layer.set_tile(x, y, self.tile())
+            return True
         return False
 
 
@@ -625,16 +619,26 @@ class WaterTile(FactoryTile):
         return WaterItem()
 
 
-class WaterItem(DiggableItem):
+class WaterItem(Item):
     def __init__(self):
         super(WaterItem, self).__init__("water", WaterTile, "water")
 
     def alter_tiles(self, tier, x, y):
-        if super(WaterItem, self).alter_tiles(tier, x, y):
-            # we successfully placed or incremented a water tile
+        tile = self.tile_available(tier, x, y)
+        layer = self.layer_available(tier, x, y)
+        updated = False
+        if tile:
+            # increase the tile
+            updated = tile.update(health = tile.health + 1)
+        elif layer:
+            new_tile = self.tile()
+            new_tile.update(health = 1)
+            layer.set_tile(x, y, new_tile)
+            updated = True
+        if updated:
+            # kill grass if there is any
             water = tier.layers[self.layer].get_tile(x, y)
             if water.bitmask == 0b1111:
-                # kill grass if there is any
                 if "grass" in tier.layers.keys():
                     tier.layers["grass"].set_tile(x, y, None)
             return True
