@@ -1,5 +1,4 @@
 import pygame, numpy, random, os, math
-from pytmx import tmxloader
 from wanderer.constants import *
 
 TILE_SIZE = 32
