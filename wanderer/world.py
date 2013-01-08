@@ -49,8 +49,8 @@ class Map(object):
             for y in xrange(self.height):
                 mask = self.get_tile_mask(x, y)
                 self.walk_mask.image.blit(mask, (x*TILE_SIZE, y*TILE_SIZE))
-        # self.walk_mask.image.set_alpha(100)
-        # self.surface.blit(self.walk_mask.image, (0, 0))
+        self.walk_mask.image.set_alpha(100)
+        self.surface.blit(self.walk_mask.image, (0, 0))
         # ^ extremely useful for collision debugging
 
     def walkable_coords(self, px_x, px_y):
@@ -135,7 +135,6 @@ class Tier(object):
     "Stores information about a height level on the map. Initialize with width and height in tiles."
 
     def __init__(self, rect, layers = None):
-        super(Tier, self).__init__()
         self.rect = rect
         self.left, self.top, self.width, self.height = self.rect
         px_width, px_height = (self.width*TILE_SIZE, self.height*TILE_SIZE)
@@ -198,7 +197,6 @@ class Layer(object):
     "Stores a grid of tile objects and a surface which depicts them. Initialize with width and height in tiles."
 
     def __init__(self, rect, tiles = None):
-        super(Layer, self).__init__()
         self.rect = rect
         self.left, self.top, self.width, self.height = self.rect
         if tiles is None:
@@ -348,7 +346,6 @@ class Tile(object):
     "Generic class for map tile information. Takes a string name which should match the base name of a file in the tile images directory."
 
     def __init__(self, name, bitmask = 0b1111, health = None, flags = None):
-        super(Tile, self).__init__()
         self.name = name
         self.bitmask = bitmask
         self.health_min = 0
@@ -445,10 +442,10 @@ class Tile(object):
         tile_type = tile_json.pop("type")
         return globals()[tile_type](**tile_json)
 
-    def get_another(self, **kwargs):
+    def get_another(self, *args, **kwargs):
         "Return another instance of this class (not a full copy)."
         kwargs["name"] = self.name
-        return self.__class__(**kwargs)
+        return self.__class__(*args, **kwargs)
 
     def pick_up(self):
         "Returns an object to be given to the player when this tile is picked up."
@@ -605,18 +602,27 @@ class DiggableItem(Item):
 
 
 class GrassTile(DiggableTile):
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         kwargs["name"] = "grass"
-        super(GrassTile, self).__init__(**kwargs)
+        super(GrassTile, self).__init__(*args, **kwargs)
 
 
 class WaterTile(FactoryTile):
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         kwargs["name"] = "water"
-        super(WaterTile, self).__init__(**kwargs)
+        super(WaterTile, self).__init__(*args, **kwargs)
 
     def item(self):
         return WaterItem()
+
+    """
+    def update(self, *args, **kwargs):
+        super(WaterTile, self).update(*args, **kwargs)
+        if self.health < 3:
+            self.flags["walkable"] = True
+        else:
+            self.flags["walkable"] = False
+    """
 
 
 class WaterItem(Item):
@@ -647,15 +653,15 @@ class WaterItem(Item):
 
 class BlockingTile(Tile):
     "A Tile which can't be walked over (same arguments as Tile)."
-    def __init__(self, **kwargs):
-        super(BlockingTile, self).__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super(BlockingTile, self).__init__(*args, **kwargs)
         self.flags["walkable"] = False
 
 
 class DirtTile(FactoryTile):
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         kwargs["name"] = "dirt"
-        super(DirtTile, self).__init__(**kwargs)
+        super(DirtTile, self).__init__(*args, **kwargs)
         self.health_variants.pop(6)
         # this one is too conspicuous
         self.health_max -= 1
